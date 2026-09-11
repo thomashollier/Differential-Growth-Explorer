@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Differential Growth — Live</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1c2027; --line:#2a2f38;
+    --txt:#e6e9ef; --dim:#8b93a3; --accent:#ff3b30; --accent2:#4ea3ff;
+    --sidebar:330px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{
+    background:var(--bg); color:var(--txt);
+    font:13px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{display:flex;height:100%;width:100%}
+
+  /* ---------- sidebar ---------- */
+  #side{
+    width:var(--sidebar); flex:0 0 var(--sidebar); height:100%;
+    background:var(--panel); border-right:1px solid var(--line);
+    display:flex; flex-direction:column; transition:margin-left .22s ease;
+  }
+  #side.hidden{margin-left:calc(-1 * var(--sidebar))}
+  .brand{
+    padding:10px 12px 9px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand h1{font-size:14px;margin:0;letter-spacing:.04em;font-weight:650}
+  .brand span{font-size:11px;color:var(--dim)}
+  #scroller{flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:10px}
+  #scroller::-webkit-scrollbar{width:9px}
+  #scroller::-webkit-scrollbar-thumb{background:#2c323c;border-radius:9px}
+  #scroller::-webkit-scrollbar-track{background:transparent}
+
+  .sect{border-bottom:1px solid var(--line)}
+  .sect h2:not(.plain){
+    margin:0;padding:7px 12px;font-size:10.5px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim);font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;user-select:none;
+  }
+  .sect h2:not(.plain):hover{color:var(--txt)}
+  .sect h2:not(.plain)::after{content:"−";font-size:13px;color:var(--dim)}
+  .sect.collapsed h2:not(.plain)::after{content:"+"}
+  .sect.collapsed .body{display:none}
+  .hrow{display:flex;align-items:center;gap:10px;padding:5px 12px}
+  .hrow h2{flex:0 0 auto;padding:0;gap:7px}
+  .hrow h2.plain{
+    padding:0;margin:0;flex:0 0 auto;font-size:10.5px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim);font-weight:600;cursor:default;
+  }
+  .hrow h2.plain::after{content:none}
+  .hrow select{flex:1 1 auto;padding:4px 7px}
+  .body{padding:1px 12px 8px}
+
+  .row{display:flex;align-items:center;gap:8px;margin:3px 0}
+  .row b{
+    flex:0 0 100px;font-weight:500;font-size:11.5px;color:#cfd5e0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .row input[type=range]{flex:1 1 auto;min-width:0}
+  .row select{flex:1 1 auto;min-width:0;width:auto}
+
+  /* two handles on one track: the span between them is the range a stroke
+     draws from */
+  .dual{flex:1 1 auto;min-width:0;position:relative;height:13px;cursor:pointer;touch-action:none}
+  .dual .trk{position:absolute;left:0;right:0;top:5px;height:3px;background:#323945;border-radius:3px}
+  .dual .fill{position:absolute;top:5px;height:3px;background:#4ea3ff99;border-radius:3px}
+  .dual .th{
+    position:absolute;top:0;width:13px;height:13px;margin-left:-6.5px;border-radius:50%;
+    background:var(--txt);box-shadow:0 0 0 1px #0006;
+  }
+  .dual .th:hover, .dual .th.drag{background:#fff}
+  .row i{
+    flex:0 0 36px;text-align:right;font-style:normal;font-size:11px;
+    color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  /* a range prints two numbers, so it needs the room */
+  .row:has(.dual) i{flex:0 0 58px}
+  .row .hint{font-size:10.5px;color:#6d7583;margin-top:3px}
+  .body>.hint{font-size:10.5px;color:#6d7583;margin:2px 0 4px}
+  .divider{
+    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#5c6473;
+    margin:8px 0 3px;padding-top:6px;border-top:1px solid #23282f;
+  }
+  .divider:first-child{border-top:0;padding-top:0;margin-top:2px}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:13px;background:transparent;cursor:pointer;margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#323945;border-radius:3px}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    background:var(--txt);margin-top:-5px;border:0;box-shadow:0 0 0 1px #0006;
+  }
+  input[type=range]:hover::-webkit-slider-thumb{background:#fff}
+  input[type=range]::-moz-range-track{height:3px;background:#323945;border-radius:3px}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:var(--txt)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:5px;padding:1px 0 4px}
+  .chip{
+    border:1px solid var(--line);background:var(--panel2);color:#c8cedb;
+    padding:4px 8px;border-radius:6px;font-size:11.5px;cursor:pointer;
+  }
+  .chip:hover{border-color:#41495a;color:#fff}
+  .chip.on{background:#2b3442;border-color:#4a5364;color:#fff}
+  .chip.on{border-color:var(--accent2);color:#fff}
+
+  .chip.saved{display:inline-flex;align-items:stretch;padding:0;overflow:hidden}
+  .chip.saved button{
+    background:none;border:0;color:inherit;font:inherit;font-size:11.5px;
+    padding:5px 4px 5px 9px;cursor:pointer;
+  }
+  .chip.saved button.x{padding:5px 8px 5px 4px;color:#6d7583;font-size:13px;line-height:1}
+  .chip.saved button.x:hover{color:var(--accent)}
+  .chip.saved:hover{border-color:#41495a;color:#fff}
+
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 0 2px}
+  button.b:disabled{opacity:.4;cursor:default}
+  button.b:disabled:hover{border-color:var(--line);color:#d7dce6}
+  button.b{
+    border:1px solid var(--line);background:var(--panel2);color:#d7dce6;
+    padding:5px 8px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;
+  }
+  button.b:hover{border-color:#495264;color:#fff}
+  button.b.wide{grid-column:1 / -1}
+  button.b.primary{background:#233043;border-color:#39506e;color:#fff}
+
+  label.ck{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12px;color:#cfd5e0;cursor:pointer}
+  label.ck input{accent-color:var(--accent2);width:14px;height:14px}
+  .colorRow{display:flex;align-items:center;justify-content:space-between;margin:4px 0;font-size:12px;color:#cfd5e0}
+  input[type=color]{
+    width:42px;height:22px;padding:0;border:1px solid var(--line);border-radius:4px;
+    background:none;cursor:pointer;
+  }
+  select{
+    width:100%;background:var(--panel2);color:#d7dce6;border:1px solid var(--line);
+    border-radius:6px;padding:6px 8px;font:inherit;font-size:12px;cursor:pointer;
+  }
+
+  /* ---------- stage ---------- */
+  #stage{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  #hud{
+    position:absolute;top:12px;right:12px;display:flex;gap:14px;
+    background:#0d0f12cc;border:1px solid #ffffff14;border-radius:8px;
+    padding:7px 12px;font-size:11px;color:#aeb6c4;backdrop-filter:blur(8px);
+    font-variant-numeric:tabular-nums;pointer-events:none;
+  }
+  #hud b{color:#fff;font-weight:600}
+  #status{
+    position:absolute;top:48px;right:12px;font-size:11px;color:#ffd166;
+    background:#0d0f12cc;border:1px solid #ffffff14;border-radius:8px;
+    padding:6px 11px;opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  #status.show{opacity:1}
+  #toolbar{
+    position:absolute;left:50%;transform:translateX(-50%);bottom:16px;
+    display:flex;gap:6px;background:#0d0f12d9;border:1px solid #ffffff14;
+    padding:7px;border-radius:10px;backdrop-filter:blur(8px);
+  }
+  #toolbar button{
+    border:1px solid transparent;background:#ffffff0d;color:#d7dce6;
+    min-width:38px;height:32px;padding:0 11px;border-radius:7px;cursor:pointer;
+    font:inherit;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  #toolbar button:hover{background:#ffffff1a;color:#fff}
+  #toolbar button.act{background:var(--accent2);color:#04121f;font-weight:600}
+  #drawbar{
+    position:absolute;left:50%;transform:translateX(-50%);top:12px;
+    display:none;align-items:center;gap:8px;background:#0d0f12ea;
+    border:1px solid var(--accent2);padding:7px 7px 7px 14px;border-radius:10px;
+    backdrop-filter:blur(8px);z-index:6;
+  }
+  #drawbar.on{display:flex}
+  #drawMsg{font-size:12px;color:#cfd5e0;margin-right:4px}
+  #drawbar button{
+    border:1px solid transparent;background:#ffffff0d;color:#d7dce6;
+    height:28px;padding:0 11px;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;
+  }
+  #drawbar button:hover{background:#ffffff1a;color:#fff}
+  #drawbar button.act{background:var(--accent2);color:#04121f;font-weight:600}
+  #drawbar button.act:disabled{background:#2b3442;color:#6d7583;cursor:default;font-weight:400}
+  #stage.drawing canvas{cursor:crosshair}
+
+  #toggleSide{
+    position:absolute;top:12px;left:12px;z-index:5;
+    background:#0d0f12cc;border:1px solid #ffffff14;color:#aeb6c4;
+    width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;
+    backdrop-filter:blur(8px);
+  }
+  #toggleSide:hover{color:#fff}
+  #note{
+    position:absolute;left:12px;bottom:16px;font-size:11px;color:#6d7583;
+    background:#0d0f12b3;border-radius:6px;padding:6px 9px;pointer-events:none;
+    max-width:270px;line-height:1.5;
+  }
+  kbd{
+    background:#ffffff12;border:1px solid #ffffff1f;border-bottom-width:2px;
+    border-radius:4px;padding:0 4px;font:inherit;font-size:10px;color:#c3cad6;
+  }
+  @media (max-width:760px){ :root{--sidebar:290px} #note{display:none} }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="brand"><h1>DIFFERENTIAL GROWTH</h1><span id="brandSub">live</span></div>
+    <div id="scroller">
+      <div class="sect" data-sect="presets">
+        <div class="hrow"><h2 class="plain">Presets</h2><select id="presets"></select></div>
+      </div>
+      <div class="sect" data-sect="seedShape">
+        <div class="hrow"><h2>Seed shape</h2><select id="shapeSel"
+          title="What the growth starts from. Shapes you trace are added to this list."></select></div>
+        <div class="body">
+          <div class="chips" id="seedList"></div>
+          <div id="seedXform"></div>
+          <div id="ctl-shape"></div>
+        </div>
+      </div>
+      <div class="sect" data-sect="constraints">
+        <h2>Constraints</h2>
+        <div class="body">
+          <div class="chips" id="constraints"></div>
+          <div class="btns">
+            <button class="b" id="drawBoundary" title="Trace an area the growth must stay inside. It is kept where you draw it on the canvas.">Draw boundary&hellip;</button>
+            <button class="b" id="drawObstacle" title="Trace an area the growth must flow around. Add as many as you like.">Draw obstacle&hellip;</button>
+          </div>
+
+        </div>
+      </div>
+      <div class="sect" data-sect="growth">
+        <h2>Growth</h2>
+        <div class="body" id="ctl-growth"></div>
+      </div>
+      <div class="sect" data-sect="forces">
+        <h2>Forces</h2>
+        <div class="body" id="ctl-forces"></div>
+      </div>
+      <div class="sect" data-sect="sim">
+        <h2>Simulation</h2>
+        <div class="body" id="ctl-sim"></div>
+      </div>
+      <div class="sect" data-sect="render">
+        <div class="hrow"><h2>Appearance</h2><select id="styleSel"
+          title="How the outline is drawn. More styles can be added in growth-core.js."></select></div>
+        <div class="body" id="ctl-render"></div>
+      </div>
+      <div class="sect collapsed" data-sect="saved">
+        <h2>Saved settings</h2>
+        <div class="body">
+          <div class="chips" id="saved"></div>
+          <div class="btns">
+            <button class="b wide primary" id="saveCur">Save current&hellip;</button>
+            <button class="b" id="copyLink">Copy link</button>
+            <button class="b" id="expJson">To file</button>
+            <button class="b wide" id="impJson">Load from file&hellip;</button>
+          </div>
+        </div>
+      </div>
+      <div class="sect collapsed" data-sect="export">
+        <h2>Export</h2>
+        <div class="body">
+          <div class="btns">
+            <button class="b" id="expSvg">SVG</button>
+            <button class="b" id="expPng">PNG</button>
+            <button class="b wide" id="copyCli" title="growth.js runs this same growth-core.js, so the command reproduces exactly what is on screen — traced seeds and constraints included.">Copy node command</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <button id="toggleSide" title="Hide panel (Tab)">‹</button>
+    <canvas id="cv"></canvas>
+    <div id="status"></div>
+    <div id="hud">
+      <span>nodes <b id="hNodes">0</b></span>
+      <span>steps <b id="hSteps">0</b></span>
+      <span>fps <b id="hFps">0</b></span>
+    </div>
+    <div id="note">
+      <kbd>space</kbd> play · <kbd>R</kbd> reset · <kbd>S</kbd> step · <kbd>F</kbd> auto-fit · <kbd>C</kbd> constraints · <kbd>Tab</kbd> panel<br>
+      scroll to zoom · drag to pan · hold <kbd>B</kbd>+drag to push the curve
+    </div>
+    <div id="drawbar">
+      <span id="drawMsg"></span>
+      <button id="barAdd" class="act">Add</button>
+      <button id="barReplace">Replace</button>
+      <button id="drawUse" class="act">Use it</button>
+      <button id="drawClear">Clear</button>
+      <button id="drawCancel">Cancel</button>
+    </div>
+    <div id="toolbar">
+      <button id="btnPlay" class="act" title="Play / pause">▶︎ Play</button>
+      <button id="btnStep" title="Single step">Step</button>
+      <button id="btnReset" title="Reset">Reset</button>
+      <button id="btnSeed" title="New random seed">Reseed</button>
+      <button id="btnFit" title="Keep the whole form in view as it grows. Turning it on re-frames now; panning or zooming turns it off.">Auto-fit</button>
+      <button id="btnClear" title="Empty the canvas. Nothing grows until you add a shape.">Clear</button>
+    </div>
+  </main>
+</div>
+<script src="growth-core.js"></script>
+<script src="presets.js"></script>
+<script>
+"use strict";
+/* ============================================================================
+   UI / renderer / export
+============================================================================ */
+
+/* ---------- parameters ---------- */
+const P = {
+  shape:'circle', initialNodes:10, startRadius:125,
+  minEdge:11, maxEdge:16, repulsionRadius:100,
+  attractionFactor:1, repulsionFactor:8, alignmentFactor:1,
+  noiseFactor:0.1, damping:0.6, wallRepulsion:1, repulsionSkip:2, splitJitter:1, pauseAtBudget:true, smoothing:0.3,
+  maxNodes:4000, stepsPerFrame:1, pruneShort:false,
+  seed:10, seeds:[{key:'circle',dx:0,dy:0,rot:0,scale:1}], drawnShapes:[], boundary:null, obstacles:[],
+  style:'smooth', tension:0.33, strokeWidth:2, fillOn:true, strokeOn:true,
+  skPasses:2, skDensity:9, skBowMin:0.2, skBowMax:0.5, skJitMin:1.2, skJitMax:3.6,
+  skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
+  skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
+  stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5,
+  stOpMin:0.25, stOpMax:0.9,
+  ctCount:4, ctGap:7, ctFade:0.72,
+  bg:'#ffffff', fill:'#000000', stroke:'#ff0000', showNodes:false, showConstraints:true, follow:true
+};
+
+/* Sliders are declared once and the panel is generated from this table.
+   restart:true  -> changing the value re-seeds the simulation. */
+const CONTROLS = {
+  shape: [
+    {k:'initialNodes',   lbl:'Seed corners',     min:3,  max:120, step:1,    restart:true, hint:'--initial-nodes · the outline is then subdivided to the working edge length'},
+    {k:'startRadius',    lbl:'Seed radius',      min:10, max:600, step:1,    restart:true,
+     hint:'size of the built-in seeds; a traced seed keeps the size you drew it'},
+    {k:'seed',           lbl:'Random seed',      min:0,  max:999, step:1,    restart:true, hint:'--seed'},
+  ],
+  growth: [
+    {k:'minEdge',        lbl:'Min edge',  min:1,  max:40,  step:0.5,  hint:'--min-edge · attraction pulls until edges reach this'},
+    {k:'maxEdge',        lbl:'Max edge',  min:2,  max:60,  step:0.5,  hint:'--max-edge · longer edges split in two'},
+    {k:'repulsionRadius',lbl:'Repel radius', min:5,  max:250, step:1,    hint:'--repulsion-radius · sets the gap between folds'},
+  ],
+  forces: [
+    {k:'attractionFactor',lbl:'Attraction',  min:0, max:3,  step:0.01, hint:'--attraction-factor'},
+    {k:'repulsionFactor', lbl:'Repulsion',   min:0, max:20, step:0.1,  hint:'--repulsion-factor'},
+    {k:'alignmentFactor', lbl:'Alignment',   min:0, max:3,  step:0.01, hint:'--alignment-factor · smooths the curve'},
+    {k:'noiseFactor',     lbl:'Noise',       min:0, max:1,  step:0.005,hint:'--noise-factor'},
+    {k:'wallRepulsion',   lbl:'Wall repel', min:0, max:2, step:0.05,
+     hint:'how hard a drawn boundary or obstacle pushes back, as a multiple of the repulsion factor. 1 makes a wall behave like a line of nodes, so the growth keeps its usual gap from it; 0 lets it press flat against the wall'},
+    {k:'smoothing',       lbl:'Smoothing', min:0, max:0.6, step:0.01,
+     hint:'shrink-free low-pass over the outline — removes per-node scalloping. Too much starves the growth'},
+    {k:'repulsionSkip',   lbl:'Skip neighbrs', min:0, max:4, step:1,
+     hint:'nodes this close along the path do not repel each other. 0 is the original formulation exactly; it is capped automatically when the repulsion radius is too small to spare them'},
+    {k:'damping',         lbl:'Damping',     min:0.05, max:0.95, step:0.01},
+  ],
+  sim: [
+    {k:'stepsPerFrame',  lbl:'Speed',         min:0.1, max:12,    step:0.1, hint:'steps per frame — below 1 the growth is slowed so you can watch it'},
+    {k:'maxNodes',       lbl:'Node budget',   min:200, max:20000, step:100, hint:'growth stops here to keep the frame rate up'},
+    {k:'splitJitter',    lbl:'Split jitter',  min:0,   max:4,     step:0.1, hint:'random offset given to each new node'},
+  ],
+  render: [
+    {k:'tension',        lbl:'Curve tension', min:0, max:0.6, step:0.01, hint:'0 = straight segments between nodes'},
+    {k:'strokeWidth',    lbl:'Stroke width',  min:0, max:12,  step:0.1,
+     hint:'base width; the pencil style varies each stroke around it'},
+    {k:'skPasses',  lbl:'Sketch passes', min:1, max:5,  step:1,   style:'pencil',
+     hint:'how many times the outline is gone over'},
+    {k:'skDensity', lbl:'Stroke spacing',min:3, max:40, step:0.5, style:'pencil',
+     hint:'distance along the outline between stroke starts — lower is denser'},
+    {kMin:'skLenMin', kMax:'skLenMax', lbl:'Length', min:4, max:160, step:1, style:'pencil',
+     hint:'each stroke takes a length from this range. Long strokes cut across curves and read as looser; collapse the range and every stroke is the same'},
+    {kMin:'skBowMin', kMax:'skBowMax', lbl:'Follow curve', min:0, max:1, step:0.01, style:'pencil',
+     hint:'each stroke takes a value from this range: 0 runs dead straight across the curve, 1 traces it exactly. A spread mixes both'},
+    {kMin:'skJitMin', kMax:'skJitMax', lbl:'Wander', min:0, max:14, step:0.1, style:'pencil',
+     hint:'how far a stroke strays off the true outline; each takes its own amount from this range'},
+    {kMin:'skWidthMin', kMax:'skWidthMax', lbl:'Width \u00d7', min:0.1, max:2.5, step:0.05, style:'pencil',
+     hint:'stroke weight, as a multiple of the stroke width above; each stroke takes a value from this range'},
+    {kMin:'skOpMin', kMax:'skOpMax', lbl:'Opacity', min:0, max:1, step:0.01, style:'pencil',
+     hint:'each stroke takes an opacity from this range'},
+    {k:'stSpacing', lbl:'Dot spacing', min:1, max:40, step:0.5, style:'stipple',
+     hint:'distance along the outline between dots'},
+    {kMin:'stSizeMin', kMax:'stSizeMax', lbl:'Dot size', min:0.2, max:8, step:0.1, style:'stipple',
+     hint:'each dot takes a radius from this range'},
+    {kMin:'stScatMin', kMax:'stScatMax', lbl:'Scatter', min:0, max:20, step:0.1, style:'stipple',
+     hint:'how far off the line a dot may sit, which is what turns an edge into grain'},
+    {kMin:'stOpMin', kMax:'stOpMax', lbl:'Dot opacity', min:0, max:1, step:0.01, style:'stipple'},
+    {k:'ctCount', lbl:'Echoes', min:0, max:14, step:1, style:'contour',
+     hint:'how many offset copies are drawn either side of the outline'},
+    {k:'ctGap', lbl:'Echo gap', min:1, max:30, step:0.5, style:'contour',
+     hint:'distance between one echo and the next'},
+    {k:'ctFade', lbl:'Echo fade', min:0.2, max:1, step:0.01, style:'contour',
+     hint:'how much fainter each echo is than the one inside it'},
+    {kMin:'skHueMin', kMax:'skHueMax', lbl:'Hue \u00b1', min:-180, max:180, step:1, style:'pencil,stipple,contour',
+     hint:'degrees each stroke may be shifted around the colour wheel from the stroke colour'},
+    {kMin:'skSatMin', kMax:'skSatMax', lbl:'Saturation \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour',
+     hint:'how much more or less saturated a stroke may be than the stroke colour'},
+    {kMin:'skValMin', kMax:'skValMax', lbl:'Value \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour',
+     hint:'how much lighter or darker a stroke may be. This is what varies a black sketch, where hue and saturation have nothing to work with'},
+  ]
+};
+
+const THEMES = {
+  'Classic':   {bg:'#ffffff', fill:'#000000', stroke:'#ff0000', fillOn:true,  strokeOn:true,  strokeWidth:2},
+  'Ink':       {bg:'#f7f4ec', fill:'#000000', stroke:'#1a1a1a', fillOn:false, strokeOn:true,  strokeWidth:1.2},
+  'Graphite':  {bg:'#f2efe9', fill:'#000000', stroke:'#2b2b33', fillOn:false, strokeOn:true,  strokeWidth:2},
+  'Solid':     {bg:'#ffffff', fill:'#111111', stroke:'#111111', fillOn:true,  strokeOn:false, strokeWidth:0},
+  'Neon':      {bg:'#07070c', fill:'#0f1733', stroke:'#3dffd0', fillOn:true,  strokeOn:true,  strokeWidth:1.6},
+  'Blueprint': {bg:'#0b2545', fill:'#123a66', stroke:'#8ecae6', fillOn:true,  strokeOn:true,  strokeWidth:1.4},
+  'Ember':     {bg:'#140d14', fill:'#f2542d', stroke:'#ffd166', fillOn:true,  strokeOn:true,  strokeWidth:1.4},
+};
+
+const SHAPES = ['circle','ring','star','square','line'];
+
+/* ---------- setup ---------- */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const sim = new Growth(P);
+const view = { scale:1, ox:0, oy:0 };
+let running = true, dpr = 1, budgetAck = false, stepCredit = 0;
+/* An open path has no inside, and filling one just closes it across the ends
+   into a blob. Switching to an open seed therefore drops the fill, and
+   switching back to a closed one restores it — but only if we were the ones
+   who turned it off, so a deliberate choice is never overridden. */
+let fillAutoOff = false;
+let lastOpenKind = false;
+const seedKeys = () => (P.seeds || []).map(e => (typeof e === 'string' ? e : e.key));
+const keyIsOpen = (key) => {
+  const d = resolveDrawn({ ...P, shape: key });
+  return d ? !d.closed : key === 'line';
+};
+// a filled open curve just closes itself across the ends, so one is enough
+const isOpenShape = () => seedKeys().some(keyIsOpen);
+function applyShapeDefaults(){
+  const open = isOpenShape();
+  if (open === lastOpenKind) return;   // same kind of seed: leave the fill alone
+  lastOpenKind = open;
+  if (open && P.fillOn){ P.fillOn = false; fillAutoOff = true; }
+  else if (!open && fillAutoOff){ P.fillOn = true; fillAutoOff = false; }
+}
+
+/* ---------- panel construction ---------- */
+function slider(def){
+  const wrap = document.createElement('div');
+  wrap.className = 'row';
+  const dec = def.step < 1 ? (def.step < 0.05 ? 3 : 2) : 0;
+  wrap.innerHTML =
+    `<b>${def.lbl}</b>` +
+    `<input type="range" min="${def.min}" max="${def.max}" step="${def.step}">` +
+    `<i data-val></i>`;
+  // the explanation lives in the tooltip rather than taking a permanent two
+  // lines under every slider - there are eighteen of them
+  if (def.hint) wrap.title = def.hint;
+  const input = wrap.querySelector('input');
+  const out = wrap.querySelector('[data-val]');
+  const sync = () => { input.value = P[def.k]; out.textContent = Number(P[def.k]).toFixed(dec); };
+  input.addEventListener('input', () => {
+    P[def.k] = parseFloat(input.value);
+    out.textContent = Number(P[def.k]).toFixed(dec);
+    if (def.restart) restart();
+  });
+  if (def.style) wrap.dataset.style = def.style;
+  sync();
+  registry.push(sync);
+  return wrap;
+}
+const registry = [];   // re-sync every widget after a preset load
+function syncAll(){
+  registry.forEach(f => f());
+  // only show the controls belonging to the selected style
+  let shown = 0;
+  document.querySelectorAll('[data-style]').forEach(el => {
+    const on = el.dataset.style.split(',').includes(P.style);
+    el.style.display = on ? '' : 'none';
+    if (on) shown++;
+  });
+}
+
+function buildGroup(id, defs){
+  const host = document.getElementById(id);
+  defs.forEach(d => host.appendChild(slider(d)));
+}
+buildGroup('ctl-shape',  CONTROLS.shape);
+buildGroup('ctl-growth', CONTROLS.growth);
+buildGroup('ctl-forces', CONTROLS.forces);
+buildGroup('ctl-sim',    CONTROLS.sim);
+
+
+/* shape chips */
+const shapeSel = document.getElementById('shapeSel');
+shapeSel.onclick = (e) => e.stopPropagation();        // do not fold the section
+
+/* Choosing from this menu puts a shape on the canvas straight away, where it
+   can be moved and sized, and the bar over the canvas asks what to do with it:
+   add it to what is already growing, replace everything with it, or drop it.
+   Tracing works the same way, once there is a line to commit. */
+const PLACEHOLDER = 'choose a shape\u2026';
+let pendingIdx = -1;        // the provisional seed, while the bar is up
+let prevSeeds = null;       // what to go back to if it is cancelled
+
+function renderShapes(){
+  shapeSel.innerHTML = '';
+  shapeSel.add(new Option(PLACEHOLDER, ''));
+  const prim = document.createElement('optgroup');
+  prim.label = 'primitives';
+  for (const k of SHAPES) prim.appendChild(new Option(k, k));
+  shapeSel.appendChild(prim);
+
+  const drawn = P.drawnShapes || [];
+  if (drawn.length){
+    const grp = document.createElement('optgroup');
+    grp.label = 'traced';
+    for (const d of drawn)
+      grp.appendChild(new Option(d.name + (d.closed ? '' : '  (open)'), 'drawn:' + d.id));
+    shapeSel.appendChild(grp);
+  }
+  const dg = document.createElement('optgroup');
+  dg.label = 'draw your own';
+  dg.appendChild(new Option('Draw closed\u2026', 'draw:closed'));
+  dg.appendChild(new Option('Draw open\u2026', 'draw:open'));
+  shapeSel.appendChild(dg);
+  shapeSel.value = '';
+}
+
+shapeSel.onchange = () => {
+  const v = shapeSel.value;
+  if (!v) return;
+  if (v === 'draw:closed'){ beginDraw('seedClosed'); return; }
+  if (v === 'draw:open'){ beginDraw('seedOpen'); return; }
+  placeShape(v);
+};
+
+/* Somewhere clear of what is already there, so a new shape is never dropped
+   on top of an existing one. */
+function freeSpot(){
+  const n = (P.seeds || []).length;
+  if (!n) return { dx: 0, dy: 0 };
+  const gap = P.startRadius * 2.6;
+  return { dx: n % 2 ? gap * Math.ceil(n / 2) : -gap * (n / 2), dy: 0 };
+}
+
+function placeShape(key){
+  prevSeeds = (P.seeds || []).map(e => ({ ...e }));
+  const drawn = resolveDrawn({ ...P, shape: key });
+  const at = drawn ? { dx: 0, dy: 0 } : freeSpot();   // a trace is already placed
+  P.seeds = (P.seeds || []).concat([{ key, dx: at.dx, dy: at.dy, rot: 0, scale: 1 }]);
+  pendingIdx = P.seeds.length - 1;
+  selSeed = pendingIdx;
+  setBarMode('place');
+  syncAll();
+  restart({ play:false });
+}
+
+/* ---- the bar ---- */
+function setBarMode(mode){
+  const bar = document.getElementById('drawbar');
+  const show = (id, on) => { document.getElementById(id).style.display = on ? '' : 'none'; };
+  bar.classList.toggle('on', mode !== 'off');
+  show('barAdd',     mode === 'place' || mode === 'trace');
+  show('barReplace', mode === 'place' || mode === 'trace');
+  show('drawUse',    mode === 'constraint');
+  show('drawClear',  mode === 'trace' || mode === 'constraint');
+  show('drawCancel', mode !== 'off');
+  const msg = { place:   'Drag to place it, then add it or replace what is there',
+                trace:   'Drag on the canvas to trace your outline',
+                constraint: '' }[mode] || '';
+  if (msg) document.getElementById('drawMsg').textContent = msg;
+  updateBarButtons();
+}
+
+function updateBarButtons(){
+  if (draw_.on) updateDrawBar();
+  else { document.getElementById('barAdd').disabled = false;
+         document.getElementById('barReplace').disabled = false; }
+}
+
+function finishSeed(how){
+  if (draw_.on){                       // commit the trace into a shape first
+    const pts = tidyPts(draw_.pts);
+    if (!pts){ flash('That outline is too small to use'); return; }
+    const closed = draw_.target === 'seedClosed';
+    const entry = { id: newShapeId(), name: nextShapeName(closed), closed, pts };
+    P.drawnShapes = (P.drawnShapes || []).concat([entry]);
+    prevSeeds = (P.seeds || []).map(e => ({ ...e }));
+    P.seeds = (P.seeds || []).concat([{ key:'drawn:' + entry.id, dx:0, dy:0, rot:0, scale:1 }]);
+    pendingIdx = P.seeds.length - 1;
+    endDraw();
+  }
+  if (pendingIdx < 0) return;
+  const inst = P.seeds[pendingIdx];
+  if (how === 'replace') P.seeds = [inst];
+  pendingIdx = -1; prevSeeds = null;
+  selSeed = P.seeds.length - 1;
+  setBarMode('off');
+  applyShapeDefaults();
+  syncAll();
+  restart({ play:false });
+  flash(how === 'replace' ? 'Replaced with this shape'
+                          : 'Added \u2014 growing from ' + P.seeds.length + ' curves');
+}
+
+function cancelSeed(){
+  if (draw_.on) endDraw();
+  if (pendingIdx >= 0 && prevSeeds) P.seeds = prevSeeds;
+  pendingIdx = -1; prevSeeds = null;
+  selSeed = Math.min(selSeed, P.seeds.length - 1);
+  setBarMode('off');
+  syncAll();
+  restart({ play:false });
+}
+
+document.getElementById('barAdd').onclick     = () => finishSeed('add');
+document.getElementById('barReplace').onclick = () => finishSeed('replace');
+document.getElementById('drawCancel').onclick = cancelSeed;
+
+document.getElementById('btnClear').onclick = () => {
+  cancelSeed();
+  P.seeds = [];
+  selSeed = -1;
+  syncAll();
+  restart({ play:false });
+  flash('Canvas cleared \u2014 choose a shape to start');
+};
+
+let selSeed = -1;                       // which placed seed is being edited
+
+function shapeLabel(key){
+  if (key.startsWith('drawn:')){
+    const d = (P.drawnShapes || []).find(e => 'drawn:' + e.id === key);
+    return d ? d.name + (d.closed ? '' : ' (open)') : 'missing shape';
+  }
+  return key;
+}
+
+/* Every placed seed, selectable so its transform can be edited. */
+function renderSeeds(){
+  const box = document.getElementById('seedList');
+  box.innerHTML = '';
+  const seeds = P.seeds || [];
+  if (selSeed >= seeds.length) selSeed = seeds.length - 1;
+  seeds.forEach((inst, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip saved' + (i === selSeed ? ' on' : '');
+    const name = document.createElement('button');
+    name.textContent = shapeLabel(inst.key);
+    name.title = 'Select, to move, turn or resize it';
+    name.onclick = () => { selSeed = i; syncAll(); draw(); };
+    const del = document.createElement('button');
+    del.className = 'x'; del.textContent = '\u00d7'; del.title = 'Remove from the canvas';
+    del.onclick = () => {
+      P.seeds = seeds.filter((_, k) => k !== i);
+      if (selSeed >= i) selSeed--;
+      applyShapeDefaults(); syncAll(); restart({ play:false });
+    };
+    chip.appendChild(name); chip.appendChild(del);
+    box.appendChild(chip);
+  });
+  renderXform();
+}
+
+/* Transform controls for the selected seed. They exist only while something is
+   selected, so a blank canvas offers nothing but Add. */
+const XFORM = [
+  { k:'dx',    lbl:'X',      min:-1200, max:1200, step:1 },
+  { k:'dy',    lbl:'Y',      min:-1200, max:1200, step:1 },
+  { k:'rot',   lbl:'Rotate', min:-180,  max:180,  step:1 },
+  { k:'scale', lbl:'Scale',  min:0.1,   max:4,    step:0.01 },
+];
+function renderXform(){
+  const host = document.getElementById('seedXform');
+  host.innerHTML = '';
+  const inst = (P.seeds || [])[selSeed];
+  if (!inst) return;
+  for (const def of XFORM){
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<b>${def.lbl}</b>`
+      + `<input type="range" min="${def.min}" max="${def.max}" step="${def.step}">`
+      + `<i></i>`;
+    const input = row.querySelector('input'), out = row.querySelector('i');
+    const dec = def.step < 1 ? 2 : 0;
+    const show = () => { out.textContent = Number(inst[def.k]).toFixed(dec); };
+    input.value = inst[def.k];
+    show();
+    input.addEventListener('input', () => {
+      inst[def.k] = parseFloat(input.value);
+      show();
+      restart({ play:false, refit:false });
+    });
+    host.appendChild(row);
+  }
+  const reset = document.createElement('div');
+  reset.className = 'btns';
+  reset.innerHTML = `<button class="b wide" id="resetXform">Reset position</button>`;
+  host.appendChild(reset);
+  reset.querySelector('button').onclick = () => {
+    Object.assign(inst, { dx:0, dy:0, rot:0, scale:1 });
+    syncAll(); restart({ play:false, refit:false });
+  };
+}
+
+renderShapes();
+registry.push(() => { renderShapes(); renderSeeds(); });
+
+/* presets */
+const presetSel = document.getElementById('presets');
+presetSel.add(new Option('choose\u2026', ''));
+for (const name of Object.keys(PRESETS)) presetSel.add(new Option(name, name));
+presetSel.onchange = () => {
+  const p = PRESETS[presetSel.value];
+  if (!p) return;
+  cancelSeed();                       // drop anything half-placed
+  Object.assign(P, JSON.parse(JSON.stringify(p)));
+  selSeed = P.seeds.length - 1;
+  lastOpenKind = isOpenShape();       // the preset states its own fill
+  fillAutoOff = false;
+  renderConstraints();
+  syncAll();
+  restart({ play:true });
+  if (PRESET_NOTES[presetSel.value]) flash(PRESET_NOTES[presetSel.value]);
+};
+registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel.value || ''; });
+
+/* simulation extras */
+(function(){
+  const host = document.getElementById('ctl-sim');
+  host.appendChild(checkbox('pauseAtBudget', 'Pause when the budget is reached',
+    'The curve can only relieve its own pressure by splitting edges. Once it may not, the forces have nowhere to go and the shape degrades.'));
+  host.appendChild(checkbox('pruneShort', 'Merge over-short edges',
+    'Not in the original script — keeps node count down on long runs.'));
+})();
+
+/* appearance: palette, what to draw, colours, then the live style's own settings */
+(function(){
+  const host = document.getElementById('ctl-render');
+
+  const ss = document.getElementById('styleSel');
+  for (const [key, st] of Object.entries(STYLES)) ss.add(new Option(st.label, key));
+  ss.onchange = () => { P.style = ss.value; syncAll(); draw(); };
+  ss.onclick = (e) => e.stopPropagation();     // do not fold the section
+  registry.push(() => {
+    ss.value = P.style;
+    document.getElementById('btnFit').classList.toggle('act', !!P.follow);
+  });
+
+  const palette = document.createElement('div');
+  palette.className = 'row';
+  palette.innerHTML = `<b>Palette</b><select id="theme"></select>`;
+  host.appendChild(palette);
+  const sel = palette.querySelector('select');
+  Object.keys(THEMES).forEach(n => sel.add(new Option(n, n)));
+  sel.onchange = () => { Object.assign(P, THEMES[sel.value]); syncAll(); };
+
+  // what gets drawn and what stays hidden
+  host.appendChild(divider('Draw'));
+  host.appendChild(checkbox('fillOn', 'Fill shape',
+    'An open seed has no inside, so this turns itself off when you pick one.'));
+  host.appendChild(checkbox('strokeOn', 'Draw outline'));
+  host.appendChild(checkbox('showNodes', 'Show nodes'));
+  host.appendChild(checkbox('showConstraints', 'Show constraints',
+    'The dashed boundary and obstacle outlines. They are never exported either way. Shortcut: C'));
+  host.appendChild(checkbox('follow', 'Auto-fit while growing'));
+
+  host.appendChild(divider('Colour'));
+  host.appendChild(colorRow('bg', 'Background'));
+  host.appendChild(colorRow('fill', 'Fill'));
+  host.appendChild(colorRow('stroke', 'Stroke'));
+
+  host.appendChild(divider('Line'));
+  CONTROLS.render.filter(d => !d.style).forEach(d => host.appendChild(slider(d)));
+
+  // the selected style's own settings, shown only while it is selected
+  const styleHead = divider('Style');
+  styleHead.dataset.style = 'pencil,stipple,contour';
+  host.appendChild(styleHead);
+  CONTROLS.render.filter(d => d.style)
+    .forEach(d => host.appendChild(d.kMin ? rangeRow(d) : slider(d)));
+})();
+
+/* A two-handled slider. Returns the row; the caller supplies the two keys it
+   edits, and they are kept in order so the low handle can never pass the high
+   one. */
+function rangeRow(def){
+  const wrap = document.createElement('div');
+  wrap.className = 'row';
+  wrap.innerHTML = `<b>${def.lbl}</b>`
+    + `<div class="dual"><div class="trk"></div><div class="fill"></div>`
+    + `<div class="th" data-lo></div><div class="th" data-hi></div></div>`
+    + `<i></i>`;
+  if (def.hint) wrap.title = def.hint;
+  if (def.style) wrap.dataset.style = def.style;
+
+  const dual = wrap.querySelector('.dual');
+  const fill = wrap.querySelector('.fill');
+  const thLo = wrap.querySelector('[data-lo]');
+  const thHi = wrap.querySelector('[data-hi]');
+  const out = wrap.querySelector('i');
+  const dec = def.step < 1 ? 2 : 0;
+  const span = def.max - def.min;
+  const pos = (v) => ((v - def.min) / span) * 100;
+
+  const paint = () => {
+    const lo = P[def.kMin], hi = P[def.kMax];
+    thLo.style.left = pos(lo) + '%';
+    thHi.style.left = pos(hi) + '%';
+    fill.style.left = pos(lo) + '%';
+    fill.style.width = Math.max(0, pos(hi) - pos(lo)) + '%';
+    out.textContent = lo.toFixed(dec) + '\u2013' + hi.toFixed(dec);
+  };
+
+  let dragging = null;
+  const valueAt = (clientX) => {
+    const r = dual.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (clientX - r.left) / (r.width || 1)));
+    const v = def.min + t * span;
+    return Math.max(def.min, Math.min(def.max, Math.round(v / def.step) * def.step));
+  };
+  dual.addEventListener('pointerdown', (e) => {
+    const v = valueAt(e.clientX);
+    // grab whichever handle is nearer to where the track was pressed
+    dragging = Math.abs(v - P[def.kMin]) <= Math.abs(v - P[def.kMax]) ? def.kMin : def.kMax;
+    (dragging === def.kMin ? thLo : thHi).classList.add('drag');
+    dual.setPointerCapture(e.pointerId);
+    move(e);
+  });
+  const move = (e) => {
+    if (!dragging) return;
+    let v = valueAt(e.clientX);
+    if (dragging === def.kMin) v = Math.min(v, P[def.kMax]);
+    else v = Math.max(v, P[def.kMin]);
+    P[dragging] = v;
+    paint();
+    draw();
+  };
+  dual.addEventListener('pointermove', move);
+  const up = () => {
+    dragging = null;
+    thLo.classList.remove('drag'); thHi.classList.remove('drag');
+  };
+  dual.addEventListener('pointerup', up);
+  dual.addEventListener('pointercancel', up);
+
+  paint();
+  registry.push(paint);
+  return wrap;
+}
+
+function divider(label){
+  const d = document.createElement('div');
+  d.className = 'divider';
+  d.textContent = label;
+  return d;
+}
+
+function checkbox(key, label, hint){
+  const l = document.createElement('label');
+  l.className = 'ck';
+  l.innerHTML = `<input type="checkbox"><span>${label}</span>`;
+  const i = l.querySelector('input');
+  const sync = () => { i.checked = !!P[key]; };
+  i.onchange = () => {
+    P[key] = i.checked;
+    if (key === 'follow'){ setFollow(i.checked); return; }
+    draw();
+  };
+  sync(); registry.push(sync);
+  if (hint) l.title = hint;
+  return l;
+}
+function colorRow(key, label){
+  const d = document.createElement('div');
+  d.className = 'colorRow';
+  d.innerHTML = `<span>${label}</span><input type="color">`;
+  const i = d.querySelector('input');
+  const sync = () => { i.value = P[key]; };
+  i.oninput = () => { P[key] = i.value; };
+  sync(); registry.push(sync);
+  return d;
+}
+
+/* collapsible sections */
+/* Which sections are folded is remembered, so the panel comes back the way you
+   left it rather than the way I guessed. */
+const FOLDS = 'diffgrowth.folds.v1';
+(function(){
+  let folded = null;
+  try { folded = JSON.parse(localStorage.getItem(FOLDS)); } catch {}
+  document.querySelectorAll('.sect[data-sect]').forEach(sect => {
+    if (Array.isArray(folded))
+      sect.classList.toggle('collapsed', folded.includes(sect.dataset.sect));
+  });
+  const save = () => {
+    const list = [...document.querySelectorAll('.sect.collapsed[data-sect]')]
+      .map(s => s.dataset.sect);
+    try { localStorage.setItem(FOLDS, JSON.stringify(list)); } catch {}
+  };
+  document.querySelectorAll('.sect h2:not(.plain)').forEach(h => {
+    h.onclick = (e) => {
+      if (e.target.tagName === 'SELECT') return;
+      h.closest('.sect').classList.toggle('collapsed');
+      save();
+    };
+  });
+})();
+
+/* ---------- view ---------- */
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = Math.max(1, Math.round(r.height * dpr));
+  if (P.follow) fit(true);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function fit(silent){
+  const b = sim.bounds();
+  for (const poly of [P.boundary, ...(P.obstacles || [])]){
+    if (!poly) continue;
+    for (const q of poly){
+      if (q[0] < b.minX) b.minX = q[0]; if (q[0] > b.maxX) b.maxX = q[0];
+      if (q[1] < b.minY) b.minY = q[1]; if (q[1] > b.maxY) b.maxY = q[1];
+    }
+  }
+  const pad = Math.max(20, P.repulsionRadius * 0.5);
+  const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
+  const s = Math.min(cv.width / dpr / w, cv.height / dpr / h);
+  view.scale = s;
+  view.ox = cv.width / dpr / 2 - ((b.minX + b.maxX) / 2) * s;
+  view.oy = cv.height / dpr / 2 - ((b.minY + b.maxY) / 2) * s;
+}
+
+/* pan / zoom / brush */
+let drag = null, brushKey = false, brush = null, seedDrag = null;
+cv.addEventListener('pointerdown', e => {
+  try { cv.setPointerCapture(e.pointerId); } catch { /* synthetic or stale pointer */ }
+  if (draw_.on){
+    draw_.stroking = true;
+    draw_.pts = [];                      // a fresh press restarts the trace
+    addDrawPoint(e);
+    return;
+  }
+  if (!draw_.on && !brushKey && !e.shiftKey){
+    const w = toWorld(e);
+    const hit = seedAt(w.x, w.y);
+    if (hit >= 0){
+      selSeed = hit;
+      const inst = P.seeds[hit];
+      seedDrag = { i:hit, x:w.x, y:w.y, dx:inst.dx, dy:inst.dy };
+      syncAll(); draw();
+      return;
+    }
+  }
+  if (brushKey || e.shiftKey){
+    brush = { ...toWorld(e), r: P.repulsionRadius * 2.5, strength: P.repulsionFactor * 1.5 };
+  } else {
+    drag = { x:e.clientX, y:e.clientY, ox:view.ox, oy:view.oy };
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (draw_.on){ if (draw_.stroking) addDrawPoint(e); return; }
+  if (seedDrag){
+    const w = toWorld(e);
+    const inst = P.seeds[seedDrag.i];
+    inst.dx = Math.round(seedDrag.dx + (w.x - seedDrag.x));
+    inst.dy = Math.round(seedDrag.dy + (w.y - seedDrag.y));
+    renderXform();
+    restart({ play:false, refit:false });
+    return;
+  }
+  if (brush){ const w = toWorld(e); brush.x = w.x; brush.y = w.y; }
+  else if (drag){
+    view.ox = drag.ox + (e.clientX - drag.x);
+    view.oy = drag.oy + (e.clientY - drag.y);
+    if (P.follow) setFollow(false);
+    if (!running) draw();
+  }
+});
+const endPointer = () => {
+  seedDrag = null;
+  if (draw_.stroking){ draw_.stroking = false; updateDrawBar(); }
+  drag = null; brush = null;
+};
+
+/* sample the stroke at a minimum spacing: enough points to keep the shape,
+   few enough that the outline still fits on a command line */
+function addDrawPoint(e){
+  const w = toWorld(e);
+  const last = draw_.pts[draw_.pts.length - 1];
+  const minGap = 7 / view.scale;
+  if (last && Math.hypot(w.x - last[0], w.y - last[1]) < minGap) return;
+  draw_.pts.push([w.x, w.y]);
+  updateDrawBar();
+  draw();
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const k = Math.exp(-e.deltaY * 0.0015);
+  view.ox = mx - (mx - view.ox) * k;
+  view.oy = my - (my - view.oy) * k;
+  view.scale *= k;
+  if (P.follow) setFollow(false);
+  if (!running) draw();
+}, { passive:false });
+
+function toWorld(e){
+  const r = cv.getBoundingClientRect();
+  return { x:(e.clientX - r.left - view.ox) / view.scale,
+           y:(e.clientY - r.top  - view.oy) / view.scale };
+}
+
+/* ---------- drawing ---------- */
+function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints){
+  c.save();
+  c.fillStyle = P.bg;
+  c.fillRect(0, 0, w, h);
+  // compose on top of whatever base transform the caller set (dpr on screen)
+  c.translate(ox, oy); c.scale(scale, scale);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+
+  // a style measures in output pixels; this is what one of them is worth here
+  const unit = unitWorld !== undefined ? unitWorld : 1 / scale;
+  (STYLES[P.style] || STYLES.smooth).render(canvasSink(c), sim, P, unit);
+  if (showConstraints){
+    const px = 1 / scale;
+    if (P.boundary){
+      c.beginPath();
+      c.moveTo(P.boundary[0][0], P.boundary[0][1]);
+      for (const q of P.boundary.slice(1)) c.lineTo(q[0], q[1]);
+      c.closePath();
+      c.setLineDash([9 * px, 7 * px]);
+      c.strokeStyle = '#4ea3ffcc'; c.lineWidth = 1.5 * px; c.stroke();
+      c.setLineDash([]);
+    }
+    for (const o of (P.obstacles || [])){
+      c.beginPath();
+      c.moveTo(o[0][0], o[0][1]);
+      for (const q of o.slice(1)) c.lineTo(q[0], q[1]);
+      c.closePath();
+      c.fillStyle = '#4ea3ff1f'; c.fill();
+      c.setLineDash([9 * px, 7 * px]);
+      c.strokeStyle = '#4ea3ffcc'; c.lineWidth = 1.5 * px; c.stroke();
+      c.setLineDash([]);
+    }
+  }
+  if (P.showNodes){
+    const r = 1.6 / scale;
+    c.fillStyle = P.stroke;
+    for (let i = 0; i < sim.n; i++){
+      c.beginPath(); c.arc(sim.x[i], sim.y[i], r, 0, 6.2832); c.fill();
+    }
+  }
+  c.restore();
+}
+function draw(){
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  paint(ctx, view.scale, view.ox, view.oy, cv.width / dpr, cv.height / dpr, undefined,
+        P.showConstraints || draw_.on);
+  if (draw_.on) paintStroke();
+  if (!running && sim.steps === 0) paintSeedHandles();
+}
+
+/* Before anything has grown, the seeds are the thing being arranged: outline
+   them, mark the selected one, and let it be dragged. Once growth starts they
+   are the curve itself and these disappear. */
+function paintSeedHandles(){
+  const seeds = P.seeds || [];
+  if (!seeds.length || !sim.ranges.length) return;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.translate(view.ox, view.oy); ctx.scale(view.scale, view.scale);
+  const px = 1 / view.scale;
+  sim.ranges.forEach((rg, i) => {
+    const on = i === selSeed;
+    ctx.beginPath();
+    ctx.moveTo(sim.x[rg.s], sim.y[rg.s]);
+    for (let k = rg.s + 1; k < rg.e; k++) ctx.lineTo(sim.x[k], sim.y[k]);
+    if (rg.closed) ctx.closePath();
+    ctx.strokeStyle = on ? '#4ea3ff' : '#4ea3ff55';
+    ctx.lineWidth = (on ? 2 : 1.2) * px;
+    ctx.setLineDash(on ? [] : [7 * px, 6 * px]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (on){
+      const c = seedCentre(i);
+      ctx.beginPath(); ctx.arc(c[0], c[1], 4 * px, 0, 6.2832);
+      ctx.fillStyle = '#4ea3ff'; ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
+function seedCentre(i){
+  const rg = sim.ranges[i];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let k = rg.s; k < rg.e; k++){
+    if (sim.x[k] < minX) minX = sim.x[k]; if (sim.x[k] > maxX) maxX = sim.x[k];
+    if (sim.y[k] < minY) minY = sim.y[k]; if (sim.y[k] > maxY) maxY = sim.y[k];
+  }
+  return [(minX + maxX) / 2, (minY + maxY) / 2];
+}
+
+/* Which seed is under this point: near its outline, or anywhere inside it —
+   grabbing a shape by its middle is what anyone would try first. */
+function seedAt(wx, wy){
+  if (running || sim.steps !== 0) return -1;
+  let best = -1, bestD = 26 / view.scale;
+  sim.ranges.forEach((rg, i) => {
+    for (let k = rg.s; k < rg.e; k++){
+      const d = Math.hypot(sim.x[k] - wx, sim.y[k] - wy);
+      if (d < bestD){ bestD = d; best = i; }
+    }
+  });
+  if (best >= 0) return best;
+
+  // inside a closed outline counts as a hit; the smallest one wins, so a shape
+  // sitting on top of a larger one is still reachable
+  let area = Infinity;
+  sim.ranges.forEach((rg, i) => {
+    if (!rg.closed || !pointInRange(rg, wx, wy)) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let k = rg.s; k < rg.e; k++){
+      if (sim.x[k] < minX) minX = sim.x[k]; if (sim.x[k] > maxX) maxX = sim.x[k];
+      if (sim.y[k] < minY) minY = sim.y[k]; if (sim.y[k] > maxY) maxY = sim.y[k];
+    }
+    const a = (maxX - minX) * (maxY - minY);
+    if (a < area){ area = a; best = i; }
+  });
+  return best;
+}
+
+function pointInRange(rg, x, y){
+  let odd = false;
+  for (let i = rg.s, j = rg.e - 1; i < rg.e; j = i++){
+    const ay = sim.y[i], by = sim.y[j];
+    if ((ay > y) !== (by > y) &&
+        x < (sim.x[j] - sim.x[i]) * (y - ay) / (by - ay) + sim.x[i]) odd = !odd;
+  }
+  return odd;
+}
+
+function paintStroke(){
+  const pts = draw_.pts;
+  const modeClosed = DRAW_MODES[draw_.target].closed;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.translate(view.ox, view.oy); ctx.scale(view.scale, view.scale);
+  const px = 1 / view.scale;
+
+  if (pts.length > 1){
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    if (modeClosed && !draw_.stroking) ctx.closePath();
+    ctx.strokeStyle = '#4ea3ff'; ctx.lineWidth = 2 * px;
+    ctx.lineJoin = ctx.lineCap = 'round';
+    ctx.stroke();
+    // while tracing a closed outline, show where it will join up
+    if (modeClosed && draw_.stroking && pts.length > 2){
+      ctx.beginPath();
+      ctx.moveTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+      ctx.lineTo(pts[0][0], pts[0][1]);
+      ctx.setLineDash([6 * px, 5 * px]);
+      ctx.strokeStyle = '#4ea3ff80';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  for (const p of pts){
+    ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * px, 0, 6.2832);
+    ctx.fillStyle = '#4ea3ff'; ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- loop ---------- */
+/* Run `count` steps, stopping early on any condition the user needs to know
+   about. Growth by edge splitting is the only outlet these forces have: once
+   it is shut off the curve keeps compressing and the outline degrades into
+   scalloping, so the run halts there instead of quietly spoiling the shape. */
+function advance(count){
+  for (let i = 0; i < count; i++){
+    sim.step(brush);
+    if (sim.unstable){
+      setRunning(false);
+      flash('Simulation went unstable — reset, or soften the forces');
+      return false;
+    }
+    if (sim.saturated && P.pauseAtBudget && !budgetAck){
+      setRunning(false);
+      flash('Node budget reached — growth complete');
+      return false;
+    }
+    if (sim.steps - sim.lastGrowth > 150 && !sim.saturated){
+      setRunning(false);
+      flash(P.boundary ? 'Growth has filled the boundary'
+                       : 'Growth has stalled — raise repulsion radius or factor, or lower smoothing');
+      return false;
+    }
+  }
+  return true;
+}
+
+let fpsT = performance.now(), fpsN = 0;
+const hN = document.getElementById('hNodes'), hS = document.getElementById('hSteps'), hF = document.getElementById('hFps');
+function frame(){
+  if (running){
+    stepCredit += P.stepsPerFrame;
+    const todo = Math.floor(stepCredit); stepCredit -= todo;
+    advance(todo);
+    if (P.follow) fit(true);
+  }
+  draw();
+  fpsN++;
+  const now = performance.now();
+  if (now - fpsT > 500){
+    hF.textContent = Math.round(fpsN * 1000 / (now - fpsT));
+    fpsT = now; fpsN = 0;
+    hN.textContent = sim.n + (sim.saturated ? ' ·max' : '');
+    hS.textContent = sim.steps;
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- actions ---------- */
+let flashT = 0;
+function flash(msg){
+  const el = document.getElementById('status');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(flashT);
+  flashT = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function restart(opts){
+  // Reset always holds: a fresh seed is there to be looked at before it runs.
+  const play  = !!(opts && opts.play);
+  // a reset only re-frames when you have asked to be followed
+  const refit = (opts && opts.refit !== undefined) ? opts.refit : P.follow;
+  budgetAck = false;
+  stepCredit = 0;
+  sim.reset();
+  setRunning(play);
+  if (refit) fit(true);
+  hN.textContent = sim.n; hS.textContent = sim.steps;
+  draw();
+}
+const btnPlay = document.getElementById('btnPlay');
+function setRunning(v){
+  running = v;
+  btnPlay.textContent = v ? '❚❚ Pause' : '▶︎ Play';
+  btnPlay.classList.toggle('act', v);
+}
+btnPlay.onclick = () => {
+  // an explicit play past the budget (or past a blow-up) is the user's call
+  if (!running){ budgetAck = sim.saturated; sim.unstable = false; }
+  setRunning(!running);
+};
+document.getElementById('btnStep').onclick  = () => { setRunning(false); sim.step(null); if (P.follow) fit(true); draw(); hN.textContent = sim.n; hS.textContent = sim.steps; };
+document.getElementById('btnReset').onclick = restart;
+document.getElementById('btnSeed').onclick  = () => { P.seed = Math.floor(Math.random() * 1000); syncAll(); restart(); };
+const btnFit = document.getElementById('btnFit');
+function setFollow(on){
+  P.follow = on;
+  btnFit.classList.toggle('act', on);
+  if (on) fit(true);               // turning it on re-frames straight away
+  syncAll();
+  draw();
+}
+btnFit.onclick = () => setFollow(!P.follow);
+document.getElementById('toggleSide').onclick = toggleSide;
+function toggleSide(){
+  const s = document.getElementById('side');
+  s.classList.toggle('hidden');
+  document.getElementById('toggleSide').textContent = s.classList.contains('hidden') ? '›' : '‹';
+  setTimeout(resize, 240);
+}
+
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const k = e.key.toLowerCase();
+  if (k === ' '){ e.preventDefault(); setRunning(!running); }
+  else if (k === 'r') restart();
+  else if (k === 's') document.getElementById('btnStep').click();
+  else if (k === 'f') setFollow(!P.follow);
+  else if (k === 'b') brushKey = true;
+  else if (k === 'c'){
+    P.showConstraints = !P.showConstraints;
+    syncAll(); draw();
+    flash(P.showConstraints ? 'Constraints shown' : 'Constraints hidden');
+  }
+  else if (k === 'tab'){ e.preventDefault(); toggleSide(); }
+});
+addEventListener('keyup', e => { if (e.key.toLowerCase() === 'b') brushKey = false; });
+
+/* ---------- export ---------- */
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function tag(){
+  return `growth_${P.shape}_atf-${P.attractionFactor}_rf-${P.repulsionFactor}_alf-${P.alignmentFactor}`
+       + `_rr-${P.repulsionRadius}_np-${P.initialNodes}_mne-${P.minEdge}_mxe-${P.maxEdge}_seed-${P.seed}`;
+}
+document.getElementById('expSvg').onclick = () => {
+  const b = sim.bounds();
+  const pad = Math.max(20, P.repulsionRadius * 0.5);
+  const x0 = b.minX - pad, y0 = b.minY - pad;
+  const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
+  const f = (v) => (Math.round(v * 100) / 100);
+
+  const sink = svgSink();
+  (STYLES[P.style] || STYLES.smooth).render(sink, sim, P, 1 / view.scale);
+
+  const svg =
+`<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(w)}" height="${Math.round(h)}" viewBox="${f(x0)} ${f(y0)} ${f(w)} ${f(h)}">
+<rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}" fill="${P.bg}"/>
+${sink.toString()}
+</svg>`;
+  download(new Blob([svg], { type:'image/svg+xml' }), tag() + '.svg');
+};
+document.getElementById('expPng').onclick = () => {
+  const SIZE = 2000;
+  const b = sim.bounds();
+  const pad = Math.max(20, P.repulsionRadius * 0.5);
+  const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
+  const s = Math.min(SIZE / w, SIZE / h);
+  const oc = document.createElement('canvas');
+  oc.width = Math.round(w * s); oc.height = Math.round(h * s);
+  const c = oc.getContext('2d');
+  // render at the weight it has on screen, not the export's own pixel scale
+  paint(c, s, -(b.minX - pad) * s, -(b.minY - pad) * s, oc.width, oc.height, 1 / view.scale);
+  oc.toBlob(bl => download(bl, tag() + '.png'), 'image/png');
+};
+document.getElementById('copyCli').onclick = (e) => {
+  navigator.clipboard.writeText(nodeCommand()).then(() => {
+    const b = e.target, old = b.textContent;
+    b.textContent = 'Copied \u2713'; setTimeout(() => b.textContent = old, 1200);
+  });
+};
+/* Every parameter that affects the form, so the command reproduces exactly
+   what is on screen. growth.js takes the same names and defaults, and runs
+   this very file, so the two cannot disagree. */
+/* One flag per seed, in order, so the command reproduces the same arrangement. */
+function seedFlags(){
+  const seeds = (P.seeds || []).map(e => (typeof e === 'string'
+    ? { key:e, dx:0, dy:0, rot:0, scale:1 } : e));
+  return seeds.map(inst => {
+    const d = resolveDrawn({ ...P, shape: inst.key });
+    if (!d){
+      // a built-in is generated by the algorithm, so its placement rides along
+      const t = [inst.dx, inst.dy, inst.rot, inst.scale];
+      const plain = t.every((v, i) => v === (i === 3 ? 1 : 0));
+      return `--seed-shape ${inst.key}` + (plain ? '' : '@' + t.join(','));
+    }
+    // a traced outline is just points, so write them already placed
+    const pts = transformPts(d.pts, inst)
+      .map(q => (Math.round(q[0] * 1000) / 1000) + ',' + (Math.round(q[1] * 1000) / 1000))
+      .join(' ');
+    return `--${d.closed ? 'seed-path' : 'seed-open-path'} "${pts}"`;
+  });
+}
+function nodeCommand(){
+  const a = [
+    'node growth.js',
+    ...seedFlags(),
+    `--seed ${P.seed}`,
+    `--initial-nodes ${P.initialNodes}`,
+    `--seed-radius ${P.startRadius}`,
+    `--min-edge ${P.minEdge}`,
+    `--max-edge ${P.maxEdge}`,
+    `--repulsion-radius ${P.repulsionRadius}`,
+    `--attraction-factor ${P.attractionFactor}`,
+    `--repulsion-factor ${P.repulsionFactor}`,
+    `--alignment-factor ${P.alignmentFactor}`,
+    `--noise-factor ${P.noiseFactor}`,
+    `--damping ${P.damping}`,
+    `--smoothing ${P.smoothing}`,
+    `--wall-repulsion ${P.wallRepulsion}`,
+    `--repulsion-skip ${P.repulsionSkip}`,
+    `--split-jitter ${P.splitJitter}`,
+    `--max-nodes ${P.maxNodes}`,
+    `--style ${P.style}`,
+    `--tension ${P.tension}`,
+    `--fill ${P.fillOn ? P.fill : 'none'}`,
+    `--stroke ${P.strokeOn ? P.stroke : 'none'}`,
+    `--background ${P.bg}`,
+    `--stroke-width ${(P.strokeWidth / view.scale).toFixed(2)}`,
+  ];
+
+  if (P.boundary) a.push(`--boundary-path "${P.boundary.map(q => q[0] + ',' + q[1]).join(' ')}"`);
+  for (const o of (P.obstacles || []))
+    a.push(`--obstacle-path "${o.map(q => q[0] + ',' + q[1]).join(' ')}"`);
+  if (P.style === 'stipple'){
+    a.push(`--dot-spacing ${P.stSpacing}`, `--dot-size ${P.stSizeMin},${P.stSizeMax}`,
+           `--dot-scatter ${P.stScatMin},${P.stScatMax}`,
+           `--dot-opacity ${P.stOpMin},${P.stOpMax}`,
+           `--sketch-hue ${P.skHueMin},${P.skHueMax}`,
+           `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
+           `--sketch-val ${P.skValMin},${P.skValMax}`);
+  }
+  if (P.style === 'contour'){
+    a.push(`--echoes ${P.ctCount}`, `--echo-gap ${P.ctGap}`, `--echo-fade ${P.ctFade}`,
+           `--sketch-hue ${P.skHueMin},${P.skHueMax}`,
+           `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
+           `--sketch-val ${P.skValMin},${P.skValMax}`);
+  }
+  if (P.style === 'pencil'){
+    a.push(`--sketch-passes ${P.skPasses}`, `--sketch-density ${P.skDensity}`,
+           `--sketch-bow ${P.skBowMin},${P.skBowMax}`,
+           `--sketch-wander ${P.skJitMin},${P.skJitMax}`,
+           `--sketch-length ${P.skLenMin},${P.skLenMax}`,
+           `--sketch-width ${P.skWidthMin},${P.skWidthMax}`,
+           `--sketch-opacity ${P.skOpMin},${P.skOpMax}`,
+           `--sketch-hue ${P.skHueMin},${P.skHueMax}`,
+           `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
+           `--sketch-val ${P.skValMin},${P.skValMax}`);
+  }
+  if (P.pruneShort) a.push('--prune-short');
+  a.push(`--output ${tag()}.svg`);
+  return a.join(' ');
+}
+
+/* ---------- drawing: seeds, boundaries and obstacles ---------- */
+/* Traced outlines are kept in the coordinates they were drawn at, so what the
+   simulation uses is exactly the line on screen. */
+const draw_ = { on:false, target:'seedClosed', pts:[], stroking:false };
+const DRAW_MODES = {
+  seedClosed: { closed:true,  msg:'Drag to trace a closed outline' },
+  seedOpen:   { closed:false, msg:'Drag to trace an open strand' },
+  boundary:   { closed:true,  msg:'Trace the area the growth must stay inside' },
+  obstacle:   { closed:true,  msg:'Trace an area the growth must keep out of' },
+};
+
+let shapeSeq = 0;
+function nextShapeName(closed){
+  const drawn = P.drawnShapes || [];
+  const stem = closed ? 'shape' : 'strand';
+  let n = 1;
+  while (drawn.some(d => d.name === stem + ' ' + n)) n++;
+  return stem + ' ' + n;
+}
+function newShapeId(){
+  shapeSeq++;
+  return 's' + shapeSeq + Math.floor(performance.now() % 100000).toString(36);
+}
+
+function beginDraw(target){
+  draw_.on = true; draw_.target = target; draw_.pts = []; draw_.stroking = false;
+  setRunning(false);
+  document.getElementById('stage').classList.add('drawing');
+  const seed = target === 'seedClosed' || target === 'seedOpen';
+  setBarMode(seed ? 'trace' : 'constraint');
+  document.getElementById('drawMsg').textContent = DRAW_MODES[target].msg;
+  draw();
+}
+function endDraw(){
+  draw_.on = false; draw_.stroking = false;
+  document.getElementById('stage').classList.remove('drawing');
+  if (pendingIdx < 0) setBarMode('off');
+  draw();
+}
+function updateDrawBar(){
+  const min = DRAW_MODES[draw_.target].closed ? 3 : 2;
+  const ok = draw_.pts.length >= min;
+  document.getElementById('drawUse').disabled = !ok;
+  document.getElementById('barAdd').disabled = !ok;
+  document.getElementById('barReplace').disabled = !ok;
+}
+
+/* Keep the stroke where it was drawn, rounded to 3 decimals so it survives a
+   trip through a command line or a settings file unchanged. */
+function tidyPts(pts){
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts){
+    if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0];
+    if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+  }
+  if (!(maxX - minX > 1e-6 || maxY - minY > 1e-6)) return null;
+  return pts.map(p => [ +p[0].toFixed(3), +p[1].toFixed(3) ]);
+}
+
+
+document.getElementById('drawBoundary').onclick = () => beginDraw('boundary');
+document.getElementById('drawObstacle').onclick = () => beginDraw('obstacle');
+document.getElementById('drawClear').onclick = () => { draw_.pts = []; updateDrawBar(); draw(); };
+
+document.getElementById('drawUse').onclick = () => {
+  const pts = tidyPts(draw_.pts);
+  if (!pts){ flash('That outline is too small to use'); return; }
+  const target = draw_.target;
+  if (target === 'boundary'){ P.boundary = pts; }
+  else { P.obstacles = (P.obstacles || []).concat([pts]); }
+  endDraw();
+  renderConstraints();
+  syncAll();
+  restart({ play:false });
+  const bad = sim.seedViolations();
+  if (bad) flash(bad + ' seed node' + (bad > 1 ? 's are' : ' is') + ' outside the boundary');
+  else flash((target === 'boundary' ? 'Boundary' : 'Obstacle') + ' set \u2014 ' + pts.length + ' points.');
+};
+
+/* ---------- constraint chips ---------- */
+function renderConstraints(){
+  const box = document.getElementById('constraints');
+  box.innerHTML = '';
+  const items = [];
+  if (P.boundary) items.push(['boundary', () => { P.boundary = null; }]);
+  (P.obstacles || []).forEach((o, i) =>
+    items.push([(P.obstacles.length > 1 ? 'obstacle ' + (i + 1) : 'obstacle'),
+                () => { P.obstacles = P.obstacles.filter((_, k) => k !== i); }]));
+  if (!items.length) return;
+  for (const [label, remove] of items){
+    const chip = document.createElement('span');
+    chip.className = 'chip saved';
+    const name = document.createElement('button');
+    name.textContent = label; name.title = 'Drawn constraint';
+    const del = document.createElement('button');
+    del.className = 'x'; del.textContent = '\u00d7'; del.title = 'Remove';
+    del.onclick = () => { remove(); renderConstraints(); restart({ play:false }); };
+    chip.appendChild(name); chip.appendChild(del);
+    box.appendChild(chip);
+  }
+}
+
+/* ---------- saved settings ---------- */
+/* Every field that defines a form. View state (pan/zoom) is deliberately not
+   saved: the same settings should reproduce the same growth, not the same
+   camera. Stroke width is screen-relative, so it rides along with the look. */
+const SAVED_KEYS = Object.keys(P);
+const STORE = 'diffgrowth.presets.v1';
+
+function readStore(){
+  try { return JSON.parse(localStorage.getItem(STORE) || '{}'); }
+  catch { return {}; }
+}
+function writeStore(obj){
+  try { localStorage.setItem(STORE, JSON.stringify(obj)); return true; }
+  catch { flash('Could not save \u2014 browser storage is unavailable'); return false; }
+}
+function currentSettings(){
+  const o = {};
+  for (const k of SAVED_KEYS) o[k] = P[k];
+  return o;
+}
+function applySettings(o){
+  for (const k of SAVED_KEYS) if (k in o) P[k] = o[k];
+  migrateDrawn(o);
+  migrateSketch(o);
+  lastOpenKind = isOpenShape();
+  fillAutoOff = false;
+  const sel = document.getElementById('theme');
+  if (sel) sel.value = '';
+  syncAll(); restart();
+}
+
+function renderSaved(){
+  const box = document.getElementById('saved');
+  const all = readStore();
+  const names = Object.keys(all).sort();
+  box.innerHTML = '';
+  if (!names.length) return;
+  for (const name of names){
+    const chip = document.createElement('span');
+    chip.className = 'chip saved';
+    const label = document.createElement('button');
+    label.textContent = name;
+    label.title = 'Load these settings';
+    label.onclick = () => applySettings(all[name]);
+    const del = document.createElement('button');
+    del.className = 'x'; del.textContent = '\u00d7';
+    del.title = 'Delete';
+    del.onclick = (ev) => {
+      ev.stopPropagation();
+      const store = readStore();
+      delete store[name];
+      if (writeStore(store)){ renderSaved(); flash('Deleted "' + name + '"'); }
+    };
+    chip.appendChild(label); chip.appendChild(del);
+    box.appendChild(chip);
+  }
+}
+
+document.getElementById('saveCur').onclick = () => {
+  const name = (prompt('Name these settings:', 'untitled') || '').trim();
+  if (!name) return;
+  const store = readStore();
+  if (store[name] && !confirm('"' + name + '" already exists. Replace it?')) return;
+  store[name] = currentSettings();
+  if (writeStore(store)){ renderSaved(); flash('Saved "' + name + '"'); }
+};
+
+/* A link carries the settings without needing storage at all, which is how
+   you move a form to another machine or hand it to someone else. */
+document.getElementById('copyLink').onclick = (e) => {
+  const url = location.origin + location.pathname
+            + '#' + encodeURIComponent(JSON.stringify(currentSettings()));
+  navigator.clipboard.writeText(url).then(() => {
+    const b = e.target, old = b.textContent;
+    b.textContent = 'Copied \u2713'; setTimeout(() => b.textContent = old, 1200);
+  });
+};
+document.getElementById('expJson').onclick = () => {
+  download(new Blob([JSON.stringify(currentSettings(), null, 2)], {type:'application/json'}),
+           tag() + '.json');
+};
+document.getElementById('impJson').onclick = () => {
+  const f = document.createElement('input');
+  f.type = 'file'; f.accept = '.json,application/json';
+  f.onchange = () => {
+    const file = f.files && f.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { applySettings(JSON.parse(r.result)); flash('Loaded ' + file.name); }
+      catch { flash('That file is not a settings file'); }
+    };
+    r.readAsText(file);
+  };
+  f.click();
+};
+
+/* Settings saved when there were only two fixed slots. */
+/* Settings saved when these were a value plus a spread. */
+function migrateSketch(o){
+  if (!o) return;
+  // a single bow/wander value becomes a range with both ends the same
+  if (o.skBowMin === undefined && o.skBow !== undefined){
+    P.skBowMin = P.skBowMax = o.skBow;
+  }
+  if (o.skJitMin === undefined && o.skJitter !== undefined){
+    P.skJitMin = P.skJitMax = o.skJitter;
+  }
+  if (o.skLenMin !== undefined) return;
+  const band = (v, spread, lo, hi) => [Math.max(lo, v * (1 - spread)), Math.min(hi, v * (1 + spread))];
+  if (o.skLength !== undefined){
+    const [a, b] = band(o.skLength, o.skLenVar === undefined ? 0.6 : o.skLenVar, 4, 160);
+    P.skLenMin = Math.round(a); P.skLenMax = Math.round(b);
+  }
+  const wv = o.skWidthVar === undefined ? 0.6 : o.skWidthVar;
+  P.skWidthMin = Math.max(0.1, 1 - wv); P.skWidthMax = Math.min(2.5, 1 + wv);
+  if (o.skOpacity !== undefined){
+    const ov = o.skOpacityVar === undefined ? 0.7 : o.skOpacityVar;
+    P.skOpMin = Math.max(0, o.skOpacity * (1 - ov)); P.skOpMax = o.skOpacity;
+  }
+}
+
+function migrateDrawn(o){
+  if (!o || (P.drawnShapes && P.drawnShapes.length)) return;
+  const made = [];
+  if (o.drawnClosed) made.push({ id:'legacy-c', name:'shape 1', closed:true,  pts:o.drawnClosed });
+  if (o.drawnOpen)   made.push({ id:'legacy-o', name:'strand 1', closed:false, pts:o.drawnOpen });
+  if (!made.length) return;
+  P.drawnShapes = made;
+  if (o.shape === 'drawn')     P.shape = 'drawn:legacy-c';
+  if (o.shape === 'drawnLine') P.shape = 'drawn:legacy-o';
+}
+
+function loadFromHash(){
+  if (!location.hash || location.hash.length < 3) return false;
+  try {
+    const o = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    for (const k of SAVED_KEYS) if (k in o) P[k] = o[k];
+    migrateDrawn(o);
+    migrateSketch(o);
+    return true;
+  } catch { return false; }
+}
+
+/* ---------- go ---------- */
+const fromLink = loadFromHash();
+lastOpenKind = isOpenShape();
+renderSaved();
+renderConstraints();
+syncAll();
+resize();
+if (fromLink){ sim.reset(); fit(true); flash('Loaded settings from link'); }
+setRunning(true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# the original batch scripts and their renders, kept locally but out of the repo
+DiffGrowth/
+DiffGrowth03/
