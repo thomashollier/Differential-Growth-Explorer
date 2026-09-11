@@ -324,7 +324,7 @@ const P = {
   maxNodes:4000, stepsPerFrame:1, pruneShort:false,
   seed:10, seeds:[{key:'circle',dx:0,dy:0,rot:0,scale:1}], drawnShapes:[], boundary:null, obstacles:[],
   style:'smooth', tension:0.33, strokeWidth:2, fillOn:true, strokeOn:true,
-  accumulate:false, trailFade:0, stampEvery:4, trailTint:'#c8a97e', tintAmount:0,
+  accumulate:false, trailFade:0, stampEvery:4, histColour:'#4a7fb5',
   skPasses:2, skDensity:9, skBowMin:0.2, skBowMax:0.5, skJitMin:1.2, skJitMax:3.6,
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
@@ -371,8 +371,7 @@ const CONTROLS = {
      hint:'steps between one layer and the next. Low values lay down a dense blur, high ones leave distinct outlines'},
     {k:'trailFade',   lbl:'Fade',         min:0, max:0.3, step:0.005, trail:true,
      hint:'how far each layer sinks back toward the paper as later ones are drawn. 0 keeps everything'},
-    {k:'tintAmount',  lbl:'Tint',         min:0, max:0.02, step:0.0005, trail:true,
-     hint:'how strongly each new layer washes the sheet with the tint colour. It compounds over the whole run, so a hundred layers at 0.002 already reads clearly — keep it low'},
+
     {k:'tension',        lbl:'Curve tension', min:0, max:0.6, step:0.01, hint:'0 = straight segments between nodes'},
     {k:'strokeWidth',    lbl:'Stroke width',  min:0, max:12,  step:0.1,
      hint:'base width; the pencil style varies each stroke around it'},
@@ -782,7 +781,7 @@ registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel
   host.appendChild(checkbox('accumulate', 'Keep every frame',
     'Each frame is left on the canvas and the next is drawn over it, so the whole evolution of the shape stacks into one image. The view has to hold still for that, so auto-fit switches off and panning or zooming starts a clean sheet.'));
   CONTROLS.render.filter(d => d.trail).forEach(d => host.appendChild(slider(d)));
-  host.appendChild(colorRow('trailTint', 'Tint colour'));
+  host.appendChild(colorRow('histColour', 'History colour'));
 
   host.appendChild(divider('Line'));
   CONTROLS.render.filter(d => !d.style && !d.trail).forEach(d => host.appendChild(slider(d)));
@@ -1043,7 +1042,8 @@ function toWorld(e){
 }
 
 /* ---------- drawing ---------- */
-function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg){
+function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg, colours){
+  const D = colours || P;
   c.save();
   if (!skipBg){
     c.fillStyle = P.bg;
@@ -1055,7 +1055,7 @@ function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg){
 
   // a style measures in output pixels; this is what one of them is worth here
   const unit = unitWorld !== undefined ? unitWorld : 1 / scale;
-  (STYLES[P.style] || STYLES.smooth).render(canvasSink(c), sim, P, unit);
+  (STYLES[P.style] || STYLES.smooth).render(canvasSink(c), sim, D, unit);
   if (showConstraints){
     const px = 1 / scale;
     if (P.boundary){
@@ -1093,7 +1093,9 @@ function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg){
    still while it fills — a pan or zoom would smear the history against itself,
    so it clears instead. */
 let trail = null, trailStamp = -1;
-let fadeDebt = 0, tintDebt = 0;
+let fadeDebt = 0;
+
+
 
 function ensureTrail(){
   if (!trail){ trail = document.createElement('canvas'); trailStamp = -1; }
@@ -1107,37 +1109,48 @@ function clearTrail(){
   if (!trail) return;
   const t = trail.getContext('2d');
   t.setTransform(1, 0, 0, 1, 0, 0);
-  t.fillStyle = P.bg;
-  t.fillRect(0, 0, trail.width, trail.height);
+  t.globalCompositeOperation = 'source-over';
+  // the buffer carries ink alone, over nothing, so it can be laid on any ground
+  t.clearRect(0, 0, trail.width, trail.height);
   trailStamp = -1;
-  fadeDebt = tintDebt = 0;
+  fadeDebt = 0;
 }
 
 function stampTrail(){
   const t = ensureTrail();
   t.setTransform(dpr, 0, 0, dpr, 0, 0);
   const w = cv.width / dpr, h = cv.height / dpr;
-  /* Each wash covers the whole sheet, so a layer is washed once more than the
-     layer after it. The oldest ink therefore takes the most tint, and the stack
-     ends up graded through time rather than tinted uniformly.
 
-     The rate is carried as a debt because the canvas composites into 8 bits: a
-     wash at alpha 0.002 moves a channel by a fraction of one level and rounds
-     away to nothing, so a slow tint applied every layer would never appear at
-     all. Paying it off in visible instalments gives the same average rate. */
-  const MIN_WASH = 0.012;
-  const wash = (colour, amount) => {
-    if (!(amount > 0)) return;
-    t.globalAlpha = Math.min(1, amount);
-    t.fillStyle = colour;
+  /* Fade eats alpha rather than painting over it, since the buffer has no
+     ground of its own. The rate is carried as a debt because the canvas
+     composites into 8 bits: a wash at alpha 0.002 moves a channel by a
+     fraction of one level and rounds away to nothing, so a slow fade would
+     never appear. Paying it off in visible instalments gives the same rate. */
+  fadeDebt += P.trailFade;
+  if (fadeDebt >= 0.012){
+    t.globalCompositeOperation = 'destination-out';
+    t.globalAlpha = Math.min(1, fadeDebt);
+    t.fillStyle = '#000';
     t.fillRect(0, 0, w, h);
     t.globalAlpha = 1;
-  };
-  fadeDebt += P.trailFade;
-  if (fadeDebt >= MIN_WASH){ wash(P.bg, fadeDebt); fadeDebt = 0; }
-  tintDebt += P.tintAmount;
-  if (tintDebt >= MIN_WASH){ wash(P.trailTint, tintDebt); tintDebt = 0; }
-  paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true);
+    fadeDebt = 0;
+  }
+
+  /* The frame goes in wearing the history colour, and is added to what is
+     already there, so the record builds in its own colour and thickens where
+     the outline has passed more than once.
+
+     Multiplying the live ink by the colour, which is the obvious way to do
+     this, only darkens: red ink times blue is dark red, never blue. Taking the
+     colour outright is what actually makes the record read as its own. A style
+     that varies its ink still varies it, now around this colour instead. */
+  const tinted = Object.assign({}, P, {
+    stroke: P.histColour,
+    fill:   P.histColour,
+  });
+  t.globalCompositeOperation = 'lighter';
+  paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true, tinted);
+  t.globalCompositeOperation = 'source-over';
   trailStamp = sim.steps;
 }
 
@@ -1145,10 +1158,12 @@ function draw(){
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (P.accumulate){
     if (trailStamp < 0 || sim.steps - trailStamp >= Math.max(1, P.stampEvery | 0)) stampTrail();
-    ctx.clearRect(0, 0, cv.width / dpr, cv.height / dpr);
-    ctx.drawImage(trail, 0, 0, cv.width / dpr, cv.height / dpr);
-    // the live frame sits on top of what has already been laid down
-    paint(ctx, view.scale, view.ox, view.oy, cv.width / dpr, cv.height / dpr, undefined,
+    const w = cv.width / dpr, h = cv.height / dpr;
+    ctx.fillStyle = P.bg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(trail, 0, 0, w, h);
+    // and the live frame over it, in its own colour, untinted
+    paint(ctx, view.scale, view.ox, view.oy, w, h, undefined,
           P.showConstraints || draw_.on, true);
   } else {
     paint(ctx, view.scale, view.ox, view.oy, cv.width / dpr, cv.height / dpr, undefined,
@@ -1421,9 +1436,18 @@ ${sink.toString()}
 };
 document.getElementById('expPng').onclick = () => {
   if (P.accumulate && trail){
-    // the stack only exists as pixels, so the export is the buffer itself
-    trail.toBlob(bl => download(bl, tag() + '-stacked.png'), 'image/png');
-    flash('Exported the stack at ' + trail.width + '\u00d7' + trail.height);
+    // the stack only exists as pixels, so the export is what is on screen:
+    // ground, the accumulated record, then the live frame
+    const oc = document.createElement('canvas');
+    oc.width = trail.width; oc.height = trail.height;
+    const c = oc.getContext('2d');
+    c.fillStyle = P.bg;
+    c.fillRect(0, 0, oc.width, oc.height);
+    c.drawImage(trail, 0, 0);
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    paint(c, view.scale, view.ox, view.oy, oc.width / dpr, oc.height / dpr, undefined, false, true);
+    oc.toBlob(bl => download(bl, tag() + '-stacked.png'), 'image/png');
+    flash('Exported the stack at ' + oc.width + '\u00d7' + oc.height);
     return;
   }
   const SIZE = 2000;

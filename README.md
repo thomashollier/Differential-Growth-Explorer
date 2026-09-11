@@ -156,20 +156,22 @@ pixel covers. So a sketch keeps the same character whether you are zoomed out on
 because the subject got bigger.
 
 **Keep every frame** (Appearance → Stacking) stops clearing the canvas: each frame is
-drawn over the last, so the evolution piles up into one image. **Stack every** sets the
-steps between layers — low values lay down a dense blur, high ones leave distinct
-outlines — **Fade** lets the oldest layers sink back toward the paper, and **Tint** with
-its colour washes the sheet a little more with every layer.
+kept and the next drawn over it, so the evolution piles up into one image.
 
-Both washes cover the whole sheet, so any given layer is washed once more than the layer
-after it: the oldest ink takes the most, and the stack grades through time rather than
-tinting evenly. Keep Tint low — it compounds over the run, and a hundred layers at 0.002
-already reads clearly.
+The record is laid down in its own **History colour**, and the live frame is drawn over
+it in the ordinary stroke colour — so you can always see where the outline is now against
+where it has been. Layers are added together rather than painted over each other, so the
+record brightens wherever the outline has passed more than once. **Stack every** sets the
+steps between layers, and **Fade** dissolves the oldest ones as later ones arrive.
+
+Multiplying the live ink by a colour, the obvious way to recolour the record, only
+darkens: red ink times blue is dark red, never blue. The record takes the colour outright
+instead. A style that varies its ink still varies it, now around that colour.
 
 The stack lives in screen pixels, so the view has to hold still while it fills: turning
 it on switches auto-fit off, and panning or zooming starts a clean sheet. Frame the shape
 for its finished size first, then reset and let it grow into that frame. PNG export
-writes the stack itself, at canvas resolution rather than the usual 2000 px.
+flattens ground, record and live frame at canvas resolution rather than the usual 2000 px.
 
 **Auto-fit** (toolbar, or `F`) is a toggle: on, the view keeps the whole form in frame;
 turning it on re-frames straight away, and panning or zooming turns it off. With it off,
