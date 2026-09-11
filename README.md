@@ -158,7 +158,13 @@ because the subject got bigger.
 **Keep every frame** (Appearance → Stacking) stops clearing the canvas: each frame is
 drawn over the last, so the evolution piles up into one image. **Stack every** sets the
 steps between layers — low values lay down a dense blur, high ones leave distinct
-outlines — and **Fade** lets the oldest layers sink back toward the paper.
+outlines — **Fade** lets the oldest layers sink back toward the paper, and **Tint** with
+its colour washes the sheet a little more with every layer.
+
+Both washes cover the whole sheet, so any given layer is washed once more than the layer
+after it: the oldest ink takes the most, and the stack grades through time rather than
+tinting evenly. Keep Tint low — it compounds over the run, and a hundred layers at 0.002
+already reads clearly.
 
 The stack lives in screen pixels, so the view has to hold still while it fills: turning
 it on switches auto-fit off, and panning or zooming starts a clean sheet. Frame the shape
