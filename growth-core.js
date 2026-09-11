@@ -975,12 +975,12 @@ const STYLES = {
   smooth: {
     label: 'Smooth',
     params: [],
-    render(sink, sim, P, unit){
+    render(sink, sim, P, unit, alpha){
       const lw = P.strokeWidth * unit;
       sink.begin();
       emitPath(sim, sink, P.tension);
-      if (P.fillOn) sink.fill(P.fill);
-      if (P.strokeOn && P.strokeWidth > 0) sink.stroke(P.stroke, lw);
+      if (P.fillOn) sink.fill(P.fill, alpha);
+      if (P.strokeOn && P.strokeWidth > 0) sink.stroke(P.stroke, lw, alpha);
     },
   },
 

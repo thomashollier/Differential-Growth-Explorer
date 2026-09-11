@@ -113,6 +113,13 @@ const PRESET_LIST = [
            skValMin: -0.05, skValMax: 0.1 },
   },
   {
+    name: 'Rings',
+    note: 'Stacking: every few steps is kept in the picture instead of being erased, so the whole evolution of the outline is visible at once, like growth rings.',
+    cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110,
+           stackEvery: 3, stackFade: 0.35,
+           fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
+  },
+  {
     name: 'Ember',
     note: 'Every stroke is nudged around the colour wheel and up or down in value, so the line burns unevenly.',
     cfg: { seeds: [seed('ring'), seed('ring', 0, 0, 0, 0.45)], startRadius: 150,

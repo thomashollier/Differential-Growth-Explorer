@@ -9,7 +9,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the ten examples below, as complete configurations |
+| `presets.js` | the eleven examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -18,7 +18,7 @@ of step.
 
 ---
 
-## The ten presets
+## The eleven presets
 
 Each is a complete configuration — seeds, forces, constraints and drawing — and each is
 in the Presets menu. The pictures were rendered from those same definitions by
@@ -47,6 +47,12 @@ in the Presets menu. The pictures were rendered from those same definitions by
 | ![Scribble](examples/scribble.png) | **Scribble** — wide ranges, long strokes that mostly ignore the curve, four passes. The same geometry, drawn loose. |
 | ![Grain](examples/grain.png) | **Grain** — the stipple style: the outline read as dots rather than a line, each taking its own size and opacity, scattered a little off the true edge. |
 | ![Topography](examples/topography.png) | **Topography** — the contour style: the outline echoed outward and inward in fading steps, so the form reads like a map. |
+
+### Keeping the history
+
+| | |
+|---|---|
+| ![Rings](examples/rings.png) | **Rings** — stacking. Every few steps is left in the picture rather than erased, so the whole evolution of the outline shows at once, like growth rings. The form is the same as Coral's; what you are looking at is its history. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 ---
@@ -148,6 +154,16 @@ A style measures in **output pixels**, not world units — it is handed how much
 pixel covers. So a sketch keeps the same character whether you are zoomed out on a
 4 000-node form or exporting at 4 000 px, exactly as a real pen does not get finer
 because the subject got bigger.
+
+**Keep every frame** (Appearance → Stacking) stops clearing the canvas: each frame is
+drawn over the last, so the evolution piles up into one image. **Stack every** sets the
+steps between layers — low values lay down a dense blur, high ones leave distinct
+outlines — and **Fade** lets the oldest layers sink back toward the paper.
+
+The stack lives in screen pixels, so the view has to hold still while it fills: turning
+it on switches auto-fit off, and panning or zooming starts a clean sheet. Frame the shape
+for its finished size first, then reset and let it grow into that frame. PNG export
+writes the stack itself, at canvas resolution rather than the usual 2000 px.
 
 **Auto-fit** (toolbar, or `F`) is a toggle: on, the view keeps the whole form in frame;
 turning it on re-frames straight away, and panning or zooming turns it off. With it off,

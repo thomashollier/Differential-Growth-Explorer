@@ -23,9 +23,13 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   const P = JSON.parse(JSON.stringify(cfg));
   const sim = new Growth(P);
 
+  // A preset with stackEvery keeps every so-many-th frame in the picture, the
+  // way the app's stacking mode does: each layer is drawn and none erased.
+  const layers = [];
   let steps = 0, stop = 'step limit';
   for (; steps < 4000; steps++){
     sim.step(null);
+    if (P.stackEvery && steps % P.stackEvery === 0) layers.push(sim.steps);
     if (sim.unstable){ stop = 'unstable'; break; }
     if (sim.saturated){ stop = 'node budget'; break; }
     if (sim.steps - sim.lastGrowth > 150){
@@ -40,8 +44,25 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
   const f = (v) => Math.round(v * 100) / 100;
 
+  const style = STYLES[P.style] || STYLES.smooth;
+  const unit = Math.max(w, h) / SIZE;
   const sink = svgSink();
-  (STYLES[P.style] || STYLES.smooth).render(sink, sim, P, Math.max(w, h) / SIZE);
+
+  if (P.stackEvery){
+    // replay, drawing a layer at each mark and keeping them all
+    const replay = new Growth(JSON.parse(JSON.stringify(cfg)));
+    let mark = 0;
+    for (let i = 0; i < steps && mark < layers.length; i++){
+      replay.step(null);
+      if (replay.steps === layers[mark]){
+        mark++;
+        const fade = P.stackFade === undefined ? 0.55 : P.stackFade;
+        const alpha = fade + (1 - fade) * (mark / layers.length);
+        style.render(sink, replay, Object.assign({}, P, { fillOn: false }), unit, alpha);
+      }
+    }
+  }
+  style.render(sink, sim, P, unit);
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" `
     + `viewBox="${f(x0)} ${f(y0)} ${f(w)} ${f(h)}">
