@@ -33,7 +33,11 @@ const seed = (key, dx, dy, rot, scale) =>
   ({ key, dx: dx || 0, dy: dy || 0, rot: rot || 0, scale: scale === undefined ? 1 : scale });
 
 /* Shared starting point, so each preset below only states what it changes. */
+/* Every setting the app carries has to appear here. A preset is the whole
+   picture and replaces all of it, so a key missing from BASE is not a default —
+   it is whatever the last preset left behind. */
 const BASE = {
+  shape: 'circle', seeds: [seed('circle')],
   initialNodes: 10, startRadius: 125, seed: 10,
   minEdge: 11, maxEdge: 16, repulsionRadius: 100,
   attractionFactor: 1, repulsionFactor: 8, alignmentFactor: 1,
@@ -44,7 +48,7 @@ const BASE = {
   fillOn: true, strokeOn: true, showNodes: false, showConstraints: false,
   follow: true, accumulate: false, trailFade: 0, stampEvery: 4, frame: null,
   stepsPerFrame: 1,
-  settleAt: 0.001,
+  maxNodes: 4000, pauseAtBudget: true, settleAt: 0.001,
   bg: '#ffffff', fill: '#000000', stroke: '#ff0000',
   skPasses: 2, skDensity: 9,
   skLenMin: 16, skLenMax: 54, skBowMin: 0.2, skBowMax: 0.5,

@@ -21,7 +21,9 @@ of step.
 ## The presets
 
 Each is a whole picture — seeds, forces, constraints, drawing and whether the view
-follows — and selecting one applies all of it. They fall into two kinds.
+follows — and selecting one applies every setting, including the ones it does not
+mention, which come from the defaults rather than from whatever was loaded before. They
+fall into two kinds.
 
 ### Growth and shape
 
