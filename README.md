@@ -334,6 +334,22 @@ the size you want to look at it, and if you need a smaller image, render it smal
 than scaling one down. The example pictures here are written out at the size they were
 measured for, which is why `to-png.sh` converts one to one.
 
+**Compositing** (Appearance → Stacking) decides how a mark combines with what is already
+down. *Normal* adds them, so wherever stacked frames overlap the colour builds toward
+saturation and the individual layers are lost in a flat patch. *Lighten* and *Darken* take
+the per-channel max or min instead, so an overlap can only be as strong as the strongest
+layer in it — on a stacked Sediment that cuts the area saturated to flat red from 54% to
+44%, and the layer lines stay legible through the densest part.
+
+Match it to the ground: Lighten for light marks on a dark background, Darken for dark
+marks on a light one. The wrong way round erases the drawing, since every mark loses to
+the background. Two things follow from how it works. It has to compare whole layers, not
+marks, so each frame is drawn over its own copy of the background before the comparison —
+which means the result is the strongest layer rather than the sum, and tone flattens: a
+lineage stack goes from ten thousand distinct colours to about ninety. And marks laid down
+this way no longer compound, so a setting that looked right under Normal will come out
+much fainter; raise the opacity or the thread weight to compensate.
+
 **Keep every frame** (Appearance → Stacking) stops clearing the canvas: each frame is
 kept and the next drawn over it, so the evolution piles up into one image. **Stack every**
 sets the steps between layers — low values lay down a dense blur, high ones leave distinct

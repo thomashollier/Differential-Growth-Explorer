@@ -1030,12 +1030,38 @@ function canvasSink(ctx){
 
 /* Collects the same calls as SVG elements. `scale` converts a screen-space
    width into user units so an export matches what is on screen. */
-function svgSink(){
+/* `blend` is 'lighten' or 'darken': min/max compositing between layers, so that
+   overlapping stacked frames stop piling up into saturated patches.
+
+   It has to be done a layer at a time, not a mark at a time. mix-blend-mode on
+   the marks themselves does nothing here, because the blend applies to the
+   source colour before alpha compositing — a pale mark over a dark ground is
+   already the lighter of the two, so lighten degenerates to ordinary blending
+   and the layers still accumulate. Measured on a stacked Sheaf, marks tagged
+   that way came out pixel for pixel identical to no blending at all.
+
+   What does work is compositing each layer as an opaque picture: the caller
+   calls layer() between frames, each frame is drawn over its own copy of the
+   ground inside an isolated group, and the group blends into the page as a
+   unit. Then an overlap really is the max of two finished layers. */
+function svgSink(blend, ground){
   const parts = [];
+  const bl = (blend === 'lighten' || blend === 'darken') ? blend : '';
+  let open = false;
   let d = [];
   const f = (v) => (Math.round(v * 100) / 100);
   return {
     begin(){ d = []; },
+    /* Start a new blended layer. Without a blend this is a no-op and everything
+       lands in one flat list, exactly as before. */
+    layer(){
+      if (!bl || !ground) return;
+      if (open) parts.push('</g>');
+      parts.push(`<g style="isolation:isolate;mix-blend-mode:${bl}">`
+        + `<rect x="${f(ground.x)}" y="${f(ground.y)}" width="${f(ground.w)}" `
+        + `height="${f(ground.h)}" fill="${ground.fill}"/>`);
+      open = true;
+    },
     moveTo(x, y){ d.push(`M ${f(x)} ${f(y)}`); },
     lineTo(x, y){ d.push(`L ${f(x)} ${f(y)}`); },
     quadTo(cx, cy, x, y){ d.push(`Q ${f(cx)},${f(cy)} ${f(x)},${f(y)}`); },
@@ -1058,7 +1084,9 @@ function svgSink(){
       parts.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${color}"`
         + (alpha !== undefined && alpha < 1 ? ` opacity="${f(alpha)}"` : '') + `/>`);
     },
-    toString(){ return parts.join('\n'); },
+    toString(){
+      return parts.join('\n') + (open ? '\n</g>' : '');
+    },
   };
 }
 

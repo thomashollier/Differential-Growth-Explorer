@@ -57,7 +57,9 @@ for (const [name, cfg] of Object.entries(PRESETS)){
 
   const style = STYLES[P.style] || STYLES.smooth;
   const unit = Math.max(w, h) / SIZE;
-  const sink = svgSink();
+  // min/max compositing needs each layer laid over its own ground, so the sink
+  // is told what that ground is
+  const sink = svgSink(P.blend, { x: x0, y: y0, w, h, fill: P.bg });
 
   if (P.stackEvery){
     // replay, drawing a layer at each mark and keeping them all
@@ -67,6 +69,7 @@ for (const [name, cfg] of Object.entries(PRESETS)){
       replay.step(null);
       if (replay.steps === layers[mark]){
         mark++;
+        sink.layer();
         const fade = P.stackFade === undefined ? 0.55 : P.stackFade;
         const alpha = fade + (1 - fade) * (mark / layers.length);
         // a different random draw per layer, so stacked marks do not pile up
@@ -79,7 +82,7 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   /* A history style has already drawn everything during the replay, and its
      final frame holds only the last step's segments. Drawing it again would
      stamp that one step at full strength over the record. */
-  if (!style.needsHistory) style.render(sink, sim, P, unit);
+  if (!style.needsHistory){ sink.layer(); style.render(sink, sim, P, unit); }
 
   // the page takes the shape of what grew, so a wide form is not letterboxed
   const outW = Math.round(w >= h ? SIZE : SIZE * (w / h));

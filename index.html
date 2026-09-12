@@ -325,7 +325,7 @@ const P = {
   maxNodes:4000, stepsPerFrame:1, pruneShort:false, settleAt:0.001, frame:null,
   seed:10, seeds:[{key:'circle',dx:0,dy:0,rot:0,scale:1}], drawnShapes:[], boundary:null, obstacles:[],
   style:'smooth', tension:0.33, strokeWidth:2, fillOn:true, strokeOn:true,
-  accumulate:false, trailFade:0, stampEvery:4,
+  accumulate:false, trailFade:0, stampEvery:4, blend:'normal',
   skPasses:2, skDensity:9, skBowMin:0.2, skBowMax:0.5, skJitMin:1.2, skJitMax:3.6,
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
@@ -819,6 +819,10 @@ registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel
   host.appendChild(colorRow('stroke', 'Stroke'));
 
   host.appendChild(divider('Stacking'));
+  host.appendChild(choice({
+    k:'blend', lbl:'Compositing',
+    options:[['normal','Normal'],['lighten','Lighten (max)'],['darken','Darken (min)']],
+    hint:'how a mark combines with what is already on the canvas. Normal adds them up, so anywhere the stacked frames overlap saturates. Lighten and Darken take the per-channel max or min instead, so an overlap can only be as strong as the strongest mark in it. Match it to the ground: Lighten for light marks on a dark background, Darken for dark marks on a light one — the wrong way round erases the drawing'}));
   host.appendChild(checkbox('accumulate', 'Keep every frame',
     'Each frame is left on the canvas and the next is drawn over it, so the whole evolution of the shape stacks into one image. The view has to hold still for that, so auto-fit switches off and panning or zooming starts a clean sheet.'));
   CONTROLS.render.filter(d => d.trail).forEach(d => host.appendChild(slider(d)));
@@ -1175,6 +1179,15 @@ function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg, varia
    still while it fills — a pan or zoom would smear the history against itself,
    so it clears instead. */
 let trail = null, trailStamp = -1;
+// one frame drawn over its own opaque ground, for min/max compositing
+let scratch = null;
+function ensureScratch(){
+  if (!scratch) scratch = document.createElement('canvas');
+  if (scratch.width !== cv.width || scratch.height !== cv.height){
+    scratch.width = cv.width; scratch.height = cv.height;
+  }
+  return scratch.getContext('2d');
+}
 let fadeDebt = 0;
 
 
@@ -1223,7 +1236,30 @@ function stampTrail(){
      are following the growth, instead of accumulating into grain. Each stamp
      therefore asks for a different draw. Keyed on the step count rather than a
      counter, so a replay of the same run stacks the same way. */
-  paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true, sim.steps);
+  const blend = (P.blend === 'lighten' || P.blend === 'darken') ? P.blend : null;
+  if (!blend){
+    paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true, sim.steps);
+  } else {
+    /* Min/max compositing, and it has to be done a whole layer at a time. Doing
+       it mark by mark achieves nothing: the blend runs before alpha
+       compositing, so a pale mark over a dark ground is already the lighter of
+       the two and lighten comes out identical to ordinary blending. What works
+       is to draw the frame over its own opaque copy of the ground and take the
+       max of that against the trail, so an overlap is the stronger of two
+       finished layers rather than their sum. */
+    const sc = ensureScratch();
+    sc.setTransform(1, 0, 0, 1, 0, 0);
+    sc.globalCompositeOperation = 'source-over';
+    sc.fillStyle = P.bg;
+    sc.fillRect(0, 0, scratch.width, scratch.height);
+    sc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    paint(sc, view.scale, view.ox, view.oy, w, h, undefined, false, true, sim.steps);
+    t.setTransform(1, 0, 0, 1, 0, 0);
+    t.globalCompositeOperation = blend;
+    t.drawImage(scratch, 0, 0);
+    t.globalCompositeOperation = 'source-over';
+    t.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
   // a history style hands over the segments since the last stamp, and they are
   // spent once laid down: the trail is the only place they live
   if ((STYLES[P.style] || {}).needsHistory) sim.moves.length = 0;
@@ -1505,7 +1541,7 @@ document.getElementById('expSvg').onclick = () => {
   const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
   const f = (v) => (Math.round(v * 100) / 100);
 
-  const sink = svgSink();
+  const sink = svgSink(P.blend, { x: x0, y: y0, w, h, fill: P.bg });
   const style = STYLES[P.style] || STYLES.smooth;
   if (style.needsHistory){
     /* The record lives on the trail canvas, which is pixels, so it cannot be
@@ -1516,10 +1552,12 @@ document.getElementById('expSvg').onclick = () => {
     const upto = sim.steps;
     for (let i = 0; i < upto; i++){
       replay.step(null);
+      sink.layer();
       style.render(sink, replay, P, 1 / view.scale);
       replay.moves.length = 0;
     }
   } else {
+    sink.layer();
     style.render(sink, sim, P, 1 / view.scale);
   }
 

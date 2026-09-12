@@ -56,6 +56,7 @@ const FLAGS = {
   'dot-spacing':       ['stSpacing', 'num', 7],
   'dot-size':          ['stSizeMin:stSizeMax', 'range', [0.6, 2.6]],
   'dot-scatter':       ['stScatMin:stScatMax', 'range', [0, 2.5]],
+  'blend':             ['blend', 'str', 'normal'],
   'dot-power':         ['stScatPow', 'num', 5],
   'dot-opacity':       ['stOpMin:stOpMax', 'range', [0.25, 0.9]],
   'echoes':            ['ctCount', 'int', 4],
@@ -257,7 +258,7 @@ function toSvg(sim, P, O){
   });
   // one output pixel is this much of the world, given the requested SVG size
   const unit = w / O.width;
-  const sink = svgSink();
+  const sink = svgSink(view.blend);
   style.render(sink, sim, view, unit);
 
   const bg = none(O.background) ? ''
