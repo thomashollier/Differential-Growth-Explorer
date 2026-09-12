@@ -33,8 +33,10 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The baseline the rest depart from. |
 | ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, stopped early. Fat arms with room between them instead of a filled disc. |
 | ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. It runs at five steps a frame, since at one it barely moves, and holds a still frame sized for where it ends up: it spreads nearly three times as wide as it is tall. |
+| ![Sprawl](examples/sprawl.png) | **Sprawl** — the Meander forces with the budget more than trebled and *Pause when the budget is reached* switched off. Growth still stops at the last node, but the run does not: the curve keeps relaxing into the room it has left and ends only when the settle test says it has stopped moving. It spends the budget at step 8,843 and settles at 11,385, packing the plane far denser than the Meander ever gets. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
 | ![Twins](examples/twins.png) | **Twins** — a circle and a square twice its size, set well apart. They grow as separate curves that never join, but each pushes the other back where they meet. |
+| ![Tracings](examples/tracings.png) | **Tracings** — two outlines drawn by hand and set side by side. A traced seed keeps the place and size it was drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications
@@ -49,7 +51,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Topography](examples/topography.png) | **Topography** — the contour style: nine echoes at close spacing, each stepped round the colour wheel, so the form reads as banded ground rather than a line. Dialled in by hand and saved out of the app. |
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
-| ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a budget three times larger. Eight steps a frame and a still frame of its own, for the same reasons Meander needs them. Dialled in by hand in the app and saved out as a settings file. |
+| ![Neon rabbit](examples/neon-rabbit.png) | **Neon rabbit** — a strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. Auto-fit off, framed for where it ends up. |
 | ![Verdigris](examples/verdigris.png) | **Verdigris** — the Meander forces again, but with the body filled in dark olive under mint strokes whose hue swings right round toward amber. The labyrinth reads as a corroded, speckled surface rather than a line. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 

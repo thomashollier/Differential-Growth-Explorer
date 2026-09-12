@@ -84,6 +84,18 @@ const PRESET_LIST = [
            follow: false, frame: { cx: -6, cy: -61, rx: 2374, ry: 886 } },
   },
   {
+    name: 'Sprawl', group: 'growth',
+    note: 'The Meander forces with the budget more than trebled and the pause at the budget switched off, so nothing stops when the last node is spent. The curve keeps relaxing into the room it has left and only stops when it has stopped moving, which takes another 2,500 steps and packs the plane far denser than the Meander ever gets.',
+    cfg: { seeds: [seed('circle')], seed: 341, startRadius: 125, repulsionRadius: 99,
+           attractionFactor: 0.52, repulsionFactor: 11.7, alignmentFactor: 1.21,
+           damping: 0.23, maxNodes: 8600, strokeWidth: 1.8, stepsPerFrame: 12,
+           // growth stops at the budget either way; what this turns off is the
+           // pause, so the run carries on to the settle test instead
+           pauseAtBudget: false, settleAt: 0.001, maxSteps: 12000,
+           // it fills the budget at step 8843 and settles at 11385
+           follow: false, frame: { cx: 29, cy: -504, rx: 4200, ry: 2060 } },
+  },
+  {
     name: 'Strand', group: 'growth',
     note: 'An open seed has two ends, so it meanders instead of closing into a blob. With no inside to fill, only the edge is drawn.',
     cfg: { seeds: [seed('line')], initialNodes: 12, minEdge: 10, maxEdge: 15,

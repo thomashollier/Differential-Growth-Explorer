@@ -34,7 +34,9 @@ for (const [name, cfg] of Object.entries(PRESETS)){
     sim.step(null);
     if (P.stackEvery && steps % P.stackEvery === 0) layers.push(sim.steps);
     if (sim.unstable){ stop = 'unstable'; break; }
-    if (sim.saturated){ stop = 'node budget'; break; }
+    // a preset that turns off the pause keeps relaxing after the budget is
+    // spent, and stops only once the form has stopped moving
+    if (sim.saturated && P.pauseAtBudget !== false){ stop = 'node budget'; break; }
     settleRun = (P.settleAt > 0 && sim.change < P.settleAt) ? settleRun + 1 : 0;
     if (settleRun >= 60){
       stop = P.boundary ? 'filled the boundary'
