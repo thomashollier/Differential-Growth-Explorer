@@ -9,7 +9,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the fourteen examples below, as complete configurations |
+| `presets.js` | the fifteen examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -50,6 +50,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
 | ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a budget three times larger. Eight steps a frame and a still frame of its own, for the same reasons Meander needs them. Dialled in by hand in the app and saved out as a settings file. |
+| ![Verdigris](examples/verdigris.png) | **Verdigris** — the Meander forces again, but with the body filled in dark olive under mint strokes whose hue swings right round toward amber. The labyrinth reads as a corroded, speckled surface rather than a line. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 The pictures are rendered from those definitions by `node make-examples.js`.
