@@ -45,7 +45,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 |---|---|
 | ![Graphite](examples/graphite.png) | **Graphite** — the pencil style: the outline as hundreds of short strokes, each taking its own length, width and opacity from a range. |
 | ![Scribble](examples/scribble.png) | **Scribble** — wide ranges and long strokes that mostly ignore the curve, four passes of loose hatching. |
-| ![Grain](examples/grain.png) | **Grain** — the stipple style: the outline read as dots, scattered a little off the true edge. |
+| ![Grain](examples/grain.png) | **Grain** — the stipple style at close spacing with the dots thrown well off the line, stacked as it grows: the outline reads as a drifting grain rather than an edge. Dialled in by hand and saved out of the app. |
 | ![Topography](examples/topography.png) | **Topography** — the contour style: the outline echoed outward and inward in fading steps, so the form reads like a map. |
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |

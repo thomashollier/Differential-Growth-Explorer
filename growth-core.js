@@ -891,6 +891,15 @@ function canvasSink(ctx){
       ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
       ctx.globalAlpha = 1;
     },
+    /* A filled disc. Worth its own call rather than four beziers: the stipple
+       style draws tens of thousands of them, and in SVG each one is a <circle>
+       of seventy bytes instead of a path of two hundred and sixty. */
+    dot(x, y, r, color, alpha){
+      ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.globalAlpha = 1;
+    },
   };
 }
 
@@ -919,6 +928,10 @@ function svgSink(){
         + `stroke-width="${Math.round(width * 1000) / 1000}"`
         + (alpha !== undefined && alpha < 1 ? ` stroke-opacity="${f(alpha)}"` : '')
         + ` stroke-linecap="round" stroke-linejoin="round"/>`);
+    },
+    dot(x, y, r, color, alpha){
+      parts.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${color}"`
+        + (alpha !== undefined && alpha < 1 ? ` opacity="${f(alpha)}"` : '') + `/>`);
     },
     toString(){ return parts.join('\n'); },
   };
@@ -1152,16 +1165,7 @@ const STYLES = {
           const nx = -ey / el * off, ny = ex / el * off;
           const r = rr(rLo, rHi);
 
-          // a disc, drawn as two arcs' worth of bezier so every sink can take it
-          const cx = px + nx, cy = py + ny, c = r * 0.5523;
-          sink.begin();
-          sink.moveTo(cx + r, cy);
-          sink.bezierCurveTo(cx + r, cy + c, cx + c, cy + r, cx, cy + r);
-          sink.bezierCurveTo(cx - c, cy + r, cx - r, cy + c, cx - r, cy);
-          sink.bezierCurveTo(cx - r, cy - c, cx - c, cy - r, cx, cy - r);
-          sink.bezierCurveTo(cx + c, cy - r, cx + r, cy - c, cx + r, cy);
-          sink.closePath();
-          sink.fill(inkFrom(P, baseHsv, rr) || P.stroke, rr(oLo, oHi));
+          sink.dot(px + nx, py + ny, r, inkFrom(P, baseHsv, rr) || P.stroke, rr(oLo, oHi));
         }
       }
     },
