@@ -120,6 +120,13 @@ const PRESET_LIST = [
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
   {
+    name: 'Sediment',
+    note: 'Stacking with nothing fading: every layer carries the same weight, so the record thickens evenly and the oldest outline reads as clearly as the newest.',
+    cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
+           stackEvery: 3, stackFade: 1,
+           fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
+  },
+  {
     name: 'Ember',
     note: 'Every stroke is nudged around the colour wheel and up or down in value, so the line burns unevenly.',
     cfg: { seeds: [seed('ring'), seed('ring', 0, 0, 0, 0.45)], startRadius: 150,

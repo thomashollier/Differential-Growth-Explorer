@@ -9,7 +9,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the eleven examples below, as complete configurations |
+| `presets.js` | the twelve examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -18,7 +18,7 @@ of step.
 
 ---
 
-## The eleven presets
+## The twelve presets
 
 Each is a complete configuration — seeds, forces, constraints and drawing — and each is
 in the Presets menu. The pictures were rendered from those same definitions by
@@ -52,7 +52,8 @@ in the Presets menu. The pictures were rendered from those same definitions by
 
 | | |
 |---|---|
-| ![Rings](examples/rings.png) | **Rings** — stacking. Every few steps is left in the picture rather than erased, so the whole evolution of the outline shows at once, like growth rings. The form is the same as Coral's; what you are looking at is its history. |
+| ![Rings](examples/rings.png) | **Rings** — stacking. Every few steps is left in the picture rather than erased, so the whole evolution of the outline shows at once, like growth rings. The form is the same as Coral's; what you are looking at is its history. Fade is up, so the oldest layers sit back. |
+| ![Sediment](examples/sediment.png) | **Sediment** — the same thing with nothing fading. Every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 ---
