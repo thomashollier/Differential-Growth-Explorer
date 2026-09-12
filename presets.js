@@ -59,6 +59,8 @@ const BASE = {
   stScatPow: 5,
   stOpMin: 0.25, stOpMax: 0.9,
   ctCount: 4, ctGap: 7, ctFade: 0.72,
+  blend: 'normal',
+  lnGain: 0.4, lnKeep: 1, lnMode: 'sample', lnFade: 0, lnW0: 1.6, lnW1: 0.3,
 };
 
 const PRESET_LIST = [
@@ -687,7 +689,7 @@ const PRESET_LIST = [
            // 700 nodes go in a hundred steps and the other six hundred are what
            // draw the picture, so the run has to carry on past the budget
            pauseAtBudget: false, settleAt: 0.008, maxSteps: 1500,
-           style: 'lineage', strokeWidth: 0.8, lnGain: 0.35, fillOn: false,
+           style: 'lineage', lnW0: 0.8, lnW1: 0.8, lnGain: 0.35, fillOn: false,
            // the record is the picture: nothing is erased and nothing fades
            accumulate: true, stampEvery: 1, trailFade: 0,
            stackEvery: 1, stackFade: 1,
@@ -700,7 +702,7 @@ const PRESET_LIST = [
     cfg: { seeds: [seed('circle')], minEdge: 15, maxEdge: 24, repulsionRadius: 150,
            repulsionFactor: 9, maxNodes: 700,
            pauseAtBudget: false, settleAt: 0.008, maxSteps: 1500,
-           style: 'lineage', strokeWidth: 0.8, fillOn: false,
+           style: 'lineage', lnW0: 0.8, lnW1: 0.8, fillOn: false,
            // fading throws most of the record away, so each surviving thread
            // has to carry twice the weight it does in the Sheaf
            lnFade: 25, lnGain: 0.7,

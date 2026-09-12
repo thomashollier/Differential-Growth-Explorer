@@ -124,6 +124,10 @@ class Growth {
        and gone where it has stopped. */
     this.age = new Int32Array(this.cap);
     this.bage = new Int32Array(this.cap);
+    /* One random number per branch, redrawn at every fork, so a branch can be
+       tinted as a whole rather than segment by segment. */
+    this.tint = new Float32Array(this.cap);
+    this.btint = new Float32Array(this.cap);
     this.moves = [];                       // x0,y0,x1,y1 … since last consumed
     this.ranges = [];
     this.n = 0;
@@ -153,6 +157,8 @@ class Growth {
     this.bdrw = new Uint8Array(c);
     const ag = new Int32Array(c); ag.set(this.age.subarray(0, this.n)); this.age = ag;
     this.bage = new Int32Array(c);
+    const tn = new Float32Array(c); tn.set(this.tint.subarray(0, this.n)); this.tint = tn;
+    this.btint = new Float32Array(c);
     this.cap = c;
   }
 
@@ -164,6 +170,7 @@ class Growth {
     // burst of branches that belong to setting up rather than to growing
     this.tracking = false;
     this.moves = [];
+    this.trnd = mulberry32(((p.seed >>> 0) ^ 0x5bf03635) >>> 0);
     const curves = this.seedCurves();
 
     let total = 0;
@@ -207,6 +214,7 @@ class Growth {
         this.nid[i] = this.nextId++;
         this.drw[i] = (i % keep0 === 0) ? 1 : 0;
         this.age[i] = 0;
+        this.tint[i] = this.trnd();
       }
     }
 
@@ -549,13 +557,17 @@ class Growth {
       const keep = Math.max(1, Math.round(p.lnKeep === undefined ? 1 : p.lnKeep));
       const tree = p.lnMode === 'descent';
       const over = Math.max(0, Math.round(p.lnFade === undefined ? 0 : p.lnFade));
-      const ids = this.nid, dw = this.drw, ag = this.age;
+      /* How far a segment is through its branch, 1 at the fork and 0 at the end
+         of the span. Tapering wants this whether or not the opacity fades, so
+         when there is no fade the span falls back to a fixed reference. */
+      const span = over > 0 ? over : 60;
+      const ids = this.nid, dw = this.drw, ag = this.age, tn = this.tint;
       for (let i = 0; i < this.n; i++){
         const on = keep === 1 ? true : (tree ? dw[i] === 1 : ids[i] % keep === 0);
         if (on){
-          // full strength at a branch, gone `over` steps later
-          const fresh = over === 0 ? 1 : 1 - ag[i] / over;
-          if (fresh > 0) mv.push(PX[i], PY[i], X[i], Y[i], fresh);
+          const fresh = Math.max(0, 1 - ag[i] / span);
+          // only the fade drops a thread entirely; a taper runs out to its end
+          if (over === 0 || fresh > 0) mv.push(PX[i], PY[i], X[i], Y[i], fresh, tn[i]);
         }
         PX[i] = X[i]; PY[i] = Y[i];
         ag[i]++;
@@ -634,6 +646,7 @@ class Growth {
     const nid = this.nid, bnid = this.bnid;
     const drw = this.drw, bdrw = this.bdrw;
     const age = this.age, bage = this.bage;
+    const tint = this.tint, btint = this.btint;
     const keep = Math.max(1, Math.round(this.p.lnKeep === undefined ? 1 : this.p.lnKeep));
     const maxE = this.p.maxEdge, maxE2 = maxE * maxE;
     const rnd = this.rnd, jit = this.p.splitJitter;
@@ -648,7 +661,7 @@ class Growth {
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
         // the first of the two keeps the identity, and the thread with it
         if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
-                    bage[m] = age[i]; }
+                    bage[m] = age[i]; btint[m] = tint[i]; }
         const mine = m;
         m++;
         if (i < last && m < lim){
@@ -664,8 +677,12 @@ class Growth {
               bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = this.nextId++;
               // a fork off a drawn thread, every keep-th time one splits
               bdrw[m] = (drw[i] && (++this.recruit % keep === 0)) ? 1 : 0;
-              // the branching event resets both sides of the fork
+              // the branching event resets both sides of the fork: each comes
+              // out of it a new branch, with its own age and its own tint
               bage[m] = 0; bage[mine] = 0;
+              // its own stream: drawing these from the simulation's would shift
+              // every later split jitter and change the form itself
+              btint[m] = this.trnd(); btint[mine] = this.trnd();
             }
             m++; split = true;
           }
@@ -682,6 +699,7 @@ class Growth {
       this.nid = bnid; this.bnid = nid;
       this.drw = bdrw; this.bdrw = drw;
       this.age = bage; this.bage = age;
+      this.tint = btint; this.btint = tint;
     }
     this.ranges = out;
     this.n = m;
@@ -701,6 +719,7 @@ class Growth {
     const nid = this.nid, bnid = this.bnid;
     const drw = this.drw, bdrw = this.bdrw;
     const age = this.age, bage = this.bage;
+    const tint = this.tint, btint = this.btint;
     const ranges = this.ranges, out = [];
     let m = 0, removed = false;
 
@@ -714,7 +733,7 @@ class Growth {
         }
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
         if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
-                    bage[m] = age[i]; }
+                    bage[m] = age[i]; btint[m] = tint[i]; }
         m++;
       }
       if (rg.closed && m - start > 8 &&
@@ -727,7 +746,7 @@ class Growth {
         for (let i = rg.s; i < rg.e; i++){
           bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
           if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
-                      bage[m] = age[i]; }
+                      bage[m] = age[i]; btint[m] = tint[i]; }
           m++;
         }
       }
@@ -742,6 +761,7 @@ class Growth {
       this.nid = bnid; this.bnid = nid;
       this.drw = bdrw; this.bdrw = drw;
       this.age = bage; this.bage = age;
+      this.tint = btint; this.btint = tint;
     }
     this.ranges = out;
     this.n = m;
@@ -1354,7 +1374,7 @@ const STYLES = {
      system, where the outline styles draw the rim. */
   lineage: {
     label: 'Lineage',
-    params: ['strokeWidth', 'lnGain', 'lnKeep', 'lnMode', 'skHue', 'skSat', 'skVal'],
+    params: ['lnW0', 'lnW1', 'lnGain', 'lnKeep', 'lnMode', 'lnFade', 'skHue', 'skSat', 'skVal'],
     needsHistory: true,
     render(sink, sim, P, unit, alpha, variant){
       const mv = sim.moves;
@@ -1365,40 +1385,71 @@ const STYLES = {
       const baseHsv = hexToHsv(P.stroke);
       const gain = P.lnGain === undefined ? 1 : P.lnGain;
 
-      const ink = inkFrom(P, baseHsv, rr) || P.stroke;
-      const lw = P.strokeWidth * unit;
+      const w0 = (P.lnW0 === undefined ? P.strokeWidth : P.lnW0) * unit;
+      const w1 = (P.lnW1 === undefined ? P.strokeWidth : P.lnW1) * unit;
+      const hueV = (P.skHueMax || 0) - (P.skHueMin || 0);
+      const satV = (P.skSatMax || 0) - (P.skSatMin || 0);
+      const valV = (P.skValMax || 0) - (P.skValMin || 0);
+      const varies = hueV !== 0 || satV !== 0 || valV !== 0;
+      const fades = P.lnFade > 0;
+      const tapers = Math.abs(w0 - w1) > 1e-9;
 
-      if (!(P.lnFade > 0)){
+      if (!fades && !tapers && !varies){
         sink.begin();
-        for (let k = 0; k < mv.length; k += 5){
+        for (let k = 0; k < mv.length; k += 6){
           sink.moveTo(mv[k], mv[k + 1]);
           sink.lineTo(mv[k + 2], mv[k + 3]);
         }
-        sink.stroke(ink, lw, gain * A);
+        sink.stroke(inkFrom(P, baseHsv, rr) || P.stroke, w0, gain * A);
         return;
       }
 
-      /* Fading: each segment carries its own strength, and one path per segment
-         would be tens of thousands of them. Sorting into a handful of bands and
-         drawing one path per band is indistinguishable at these opacities and
-         keeps the output the same size it was. */
-      const BANDS = 8;
-      const band = [];
-      for (let b = 0; b < BANDS; b++) band.push(null);
-      for (let k = 0; k < mv.length; k += 5){
-        let b = Math.round(mv[k + 4] * BANDS) - 1;
-        if (b < 0) b = 0; else if (b >= BANDS) b = BANDS - 1;
-        (band[b] || (band[b] = [])).push(k);
+      /* Each segment now wants its own width, opacity and colour, and a path
+         apiece would be tens of thousands of them. Width and opacity both come
+         from how far through its branch the segment is, so they quantise
+         together into one set of bands; the colour is per branch, so it gets
+         its own. One path per combination that actually occurs keeps the output
+         about the size it was, and at these opacities the banding does not
+         show. */
+      const AGE = 8, TINT = varies ? 8 : 1;
+      const bins = new Map();
+      for (let k = 0; k < mv.length; k += 6){
+        const fresh = mv[k + 4];
+        let a = Math.round(fresh * (AGE - 1));
+        if (a < 0) a = 0; else if (a >= AGE) a = AGE - 1;
+        let t = varies ? Math.floor(mv[k + 5] * TINT) : 0;
+        if (t < 0) t = 0; else if (t >= TINT) t = TINT - 1;
+        const key = a * TINT + t;
+        let list = bins.get(key);
+        if (!list){ list = []; bins.set(key, list); }
+        list.push(k);
       }
-      for (let b = 0; b < BANDS; b++){
-        const ks = band[b];
-        if (!ks) continue;
+
+      const hsv = P.stroke ? baseHsv : null;
+      for (const [key, ks] of bins){
+        const a = Math.floor(key / TINT), t = key % TINT;
+        const fresh = AGE === 1 ? 1 : a / (AGE - 1);
+        // fresh is 1 at the fork, so the start width belongs to the new branch
+        const lw = w1 + (w0 - w1) * fresh;
+        const alpha = gain * A * (fades ? Math.max(0.02, fresh) : 1);
+        let ink = P.stroke;
+        if (varies && hsv){
+          /* One random per branch, so the three channels are pulled apart with
+             a couple of cheap hashes — otherwise hue, saturation and value all
+             move together and the eight tints read as one ramp. */
+          const u = (t + 0.5) / TINT;
+          const f2 = (u * 7.31) % 1, f3 = (u * 3.77) % 1;
+          ink = hsvToCss(
+            hsv[0] + (P.skHueMin || 0) + hueV * u,
+            hsv[1] + (P.skSatMin || 0) + satV * f2,
+            hsv[2] + (P.skValMin || 0) + valV * f3);
+        }
         sink.begin();
         for (const k of ks){
           sink.moveTo(mv[k], mv[k + 1]);
           sink.lineTo(mv[k + 2], mv[k + 3]);
         }
-        sink.stroke(ink, lw, gain * A * ((b + 1) / BANDS));
+        sink.stroke(ink, lw, alpha);
       }
     },
   },

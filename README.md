@@ -299,6 +299,14 @@ the **Style** menu on its header so it is reachable while the section is folded.
   scattered keeps a quarter of the nodes and tree keeps about three per cent, because a
   thread has to be descended from a drawn one to be recruited at all.
 
+  **Branch width** is a range rather than a single number: a branch is drawn at the high
+  width where it forks and tapers to the low one as it ages, so the threads read as roots
+  thinning toward their tips. Reverse the two for the opposite, thin at the fork and
+  swelling outward. Set them equal for an even line. The taper runs over the fade span, or
+  sixty steps when fading is off. **Hue ±**, **Saturation ±** and **Value ±** vary per
+  *branch* here rather than per mark — one colour drawn at each fork and kept for that
+  branch's whole life, so the tints separate the branches instead of dithering along them.
+
   **Fade over** lays a thread down at full strength each time it branches and fades it to
   nothing that many steps later, after which it stops being drawn at all. Since only the
   neighbourhood of a split survives, the picture stops being the swept sheet and becomes
