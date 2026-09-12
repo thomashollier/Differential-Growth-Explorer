@@ -288,6 +288,17 @@ const PRESET_LIST = [
              [-151.574,-139.78],[-92.167,-126.476],[-63.03,-85.51],[-102.6,-57.347]]}] },
   },
   {
+    name: 'Warren', group: 'growth',
+    note: 'Edges a third the usual length, nothing skipped in the repulsion, and heavy smoothing. Every node feels every neighbour, so the folding is as fine and as even as this tool gets: a round mass packed with passages of one width throughout, with none of the radial arms the coarser settings throw out. It fills its budget in thirty-five steps and takes twelve hundred more to work the folds even.',
+    cfg: { minEdge: 4, maxEdge: 9, repulsionFactor: 11.5, alignmentFactor: 1.41,
+           damping: 0.5, smoothing: 0.45, splitJitter: 0.7,
+           // the usual skip of 2 ignores near neighbours for speed; at this edge
+           // length that is most of the neighbourhood, and the fold coarsens
+           repulsionSkip: 0, pruneShort: true,
+           maxNodes: 3200, pauseAtBudget: false, settleAt: 0.01,
+           follow: false, frame: { cx: -5, cy: 8, rx: 2440, ry: 1457 } },
+  },
+  {
     name: 'Corral', group: 'growth',
     note: 'A drawn boundary pens the growth in and two obstacles stand in its way. The walls push back like a line of nodes, so the curve keeps its distance, and the run ends when the boundary is full.',
     cfg: { seeds: [seed('circle')], startRadius: 55, repulsionRadius: 46,
