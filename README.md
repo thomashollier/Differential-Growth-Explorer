@@ -20,8 +20,12 @@ of step.
 
 ## The thirteen presets
 
-Each is a complete configuration — seeds, forces, constraints and drawing — and each is
-in the Presets menu. The pictures were rendered from those same definitions by
+Each is a complete configuration — seeds, forces, constraints and drawing — but the two
+halves are kept apart in the app. The **Presets** menu applies only the *form*: what
+grows, the forces, any constraints. The **Look** menu in Appearance applies only the
+*drawing*: style, colours, and every setting that style has. So you can put any look on
+any form without either one clobbering the other, and neither touches your speed,
+auto-fit or guides. The pictures were rendered from those same definitions by
 `node make-examples.js`.
 
 ### Starting from a primitive
@@ -135,6 +139,9 @@ and when an edge splits. **Speed** goes below 1 step per frame; growth saturates
 
 Everything visual is in one section, under Draw / Colour / Line / Sketch headings, with
 the **Style** menu on its header so it is reachable while the section is folded.
+
+**Look** (top of Appearance) takes the whole appearance of any preset — style, colours
+and all its settings — leaving what is growing alone.
 
 - **Smooth** — the Bézier outline, fill and stroke.
 - **Stipple** — dots along the outline: spacing, size, scatter and opacity, the last

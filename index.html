@@ -411,17 +411,30 @@ const CONTROLS = {
   ]
 };
 
-const THEMES = {
-  'Classic':   {bg:'#ffffff', fill:'#000000', stroke:'#ff0000', fillOn:true,  strokeOn:true,  strokeWidth:2},
-  'Ink':       {bg:'#f7f4ec', fill:'#000000', stroke:'#1a1a1a', fillOn:false, strokeOn:true,  strokeWidth:1.2},
-  'Graphite':  {bg:'#f2efe9', fill:'#000000', stroke:'#2b2b33', fillOn:false, strokeOn:true,  strokeWidth:2},
-  'Solid':     {bg:'#ffffff', fill:'#111111', stroke:'#111111', fillOn:true,  strokeOn:false, strokeWidth:0},
-  'Neon':      {bg:'#07070c', fill:'#0f1733', stroke:'#3dffd0', fillOn:true,  strokeOn:true,  strokeWidth:1.6},
-  'Blueprint': {bg:'#0b2545', fill:'#123a66', stroke:'#8ecae6', fillOn:true,  strokeOn:true,  strokeWidth:1.4},
-  'Ember':     {bg:'#140d14', fill:'#f2542d', stroke:'#ffd166', fillOn:true,  strokeOn:true,  strokeWidth:1.4},
-};
-
 const SHAPES = ['circle','ring','star','square','line'];
+
+/* A preset describes a whole picture, but the two halves are worth having
+   apart: the form is what grows, the look is how it is drawn. Picking a form
+   leaves your colours and style alone, and picking a look leaves the shape
+   alone. Anything in neither list — speed, auto-fit, whether guides show — is
+   yours and is never touched. */
+const FORM_KEYS = ['seeds','drawnShapes','boundary','obstacles','initialNodes',
+  'startRadius','seed','minEdge','maxEdge','repulsionRadius','attractionFactor',
+  'repulsionFactor','alignmentFactor','noiseFactor','damping','smoothing',
+  'repulsionSkip','wallRepulsion','splitJitter','pruneShort','maxNodes'];
+
+const LOOK_KEYS = ['style','tension','strokeWidth','fillOn','strokeOn','showNodes',
+  'bg','fill','stroke','accumulate','trailFade','stampEvery',
+  'skPasses','skDensity','skLenMin','skLenMax','skBowMin','skBowMax','skJitMin',
+  'skJitMax','skWidthMin','skWidthMax','skOpMin','skOpMax','skHueMin','skHueMax',
+  'skSatMin','skSatMax','skValMin','skValMax',
+  'stSpacing','stSizeMin','stSizeMax','stScatMin','stScatMax','stOpMin','stOpMax',
+  'ctCount','ctGap','ctFade'];
+
+function applyKeys(preset, keys){
+  const copy = JSON.parse(JSON.stringify(preset));
+  for (const k of keys) if (k in copy) P[k] = copy[k];
+}
 
 /* ---------- setup ---------- */
 const cv = document.getElementById('cv');
@@ -721,9 +734,9 @@ presetSel.onchange = () => {
   const p = PRESETS[presetSel.value];
   if (!p) return;
   cancelSeed();                       // drop anything half-placed
-  Object.assign(P, JSON.parse(JSON.stringify(p)));
+  applyKeys(p, FORM_KEYS);            // the shape of it; your look is left alone
   selSeed = P.seeds.length - 1;
-  lastOpenKind = isOpenShape();       // the preset states its own fill
+  lastOpenKind = isOpenShape();
   fillAutoOff = false;
   renderConstraints();
   syncAll();
@@ -754,13 +767,23 @@ registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel
     document.getElementById('btnFit').classList.toggle('act', !!P.follow);
   });
 
-  const palette = document.createElement('div');
-  palette.className = 'row';
-  palette.innerHTML = `<b>Palette</b><select id="theme"></select>`;
-  host.appendChild(palette);
-  const sel = palette.querySelector('select');
-  Object.keys(THEMES).forEach(n => sel.add(new Option(n, n)));
-  sel.onchange = () => { Object.assign(P, THEMES[sel.value]); syncAll(); };
+  const look = document.createElement('div');
+  look.className = 'row';
+  look.title = 'Take the whole appearance of a preset — style, colours and all its '
+             + 'settings — without touching what is growing.';
+  look.innerHTML = `<b>Look</b><select id="lookSel"></select>`;
+  host.appendChild(look);
+  const sel = look.querySelector('select');
+  sel.add(new Option('choose\u2026', ''));
+  Object.keys(PRESETS).forEach(n => sel.add(new Option(n, n)));
+  sel.onchange = () => {
+    const p = PRESETS[sel.value];
+    if (!p) return;
+    applyKeys(p, LOOK_KEYS);
+    clearTrail();
+    syncAll();
+    draw();
+  };
 
   // what gets drawn and what stays hidden
   host.appendChild(divider('Draw'));

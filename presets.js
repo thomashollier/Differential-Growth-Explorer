@@ -24,6 +24,7 @@ const seed = (key, dx, dy, rot, scale) =>
 
 /* Shared starting point, so each preset below only states what it changes. */
 const BASE = {
+  accumulate: false, trailFade: 0, stampEvery: 4,
   initialNodes: 10, startRadius: 125, seed: 10,
   minEdge: 11, maxEdge: 16, repulsionRadius: 100,
   attractionFactor: 1, repulsionFactor: 8, alignmentFactor: 1,
@@ -117,6 +118,7 @@ const PRESET_LIST = [
     note: 'Stacking: every few steps is kept in the picture instead of being erased, so the whole evolution of the outline is visible at once, like growth rings.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110,
            stackEvery: 3, stackFade: 0.35,
+           accumulate: true, stampEvery: 3, trailFade: 0.03,
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
   {
@@ -124,6 +126,7 @@ const PRESET_LIST = [
     note: 'Stacking with nothing fading: every layer carries the same weight, so the record thickens evenly and the oldest outline reads as clearly as the newest.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
            stackEvery: 3, stackFade: 1,
+           accumulate: true, stampEvery: 3, trailFade: 0,
            fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
   },
   {
