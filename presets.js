@@ -422,7 +422,7 @@ const PRESET_LIST = [
            stepsPerFrame: 1, follow: false,
            frame: { cx: -583, cy: -333, rx: 2622, ry: 1567 }, style: 'smooth',
            tension: 0.33, strokeWidth: 1, fillOn: false, strokeOn: true, showNodes: false,
-           showConstraints: true, accumulate: true, trailFade: 0.005, stampEvery: 1,
+           showConstraints: true, accumulate: true, trailFade: 0.01, stampEvery: 1,
            bg: '#000000', fill: '#000000', stroke: '#00fffb', skPasses: 2, skDensity: 9,
            skLenMin: 16, skLenMax: 54, skBowMin: 0.2, skBowMax: 0.5, skJitMin: 1.2,
            skJitMax: 3.6, skWidthMin: 0.4, skWidthMax: 1.6, skOpMin: 0.25, skOpMax: 0.8,
@@ -540,7 +540,11 @@ const PRESET_LIST = [
            ],
            // the app lays a layer every step; every fourth is plenty for the
            // still picture, where each layer is a whole path of its own
-           stackEvery: 4, stackFade: 0.35 },
+           // the still ramps its layers linearly from stackFade up to 1, so this
+           // is the oldest layer's alpha. The app's fade is geometric: at a
+           // trailFade of 0.01 over 367 stamps the oldest is down to 0.025, so
+           // 0.35 would show a record the app no longer keeps
+           stackEvery: 4, stackFade: 0.06 },
   },
   {
     name: 'Verdigris', group: 'creative',
@@ -675,9 +679,12 @@ const PRESET_LIST = [
   },
   {
     name: 'Ember', group: 'creative',
-    note: 'Two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly.',
+    note: 'Two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. The pause at the budget is off: the rings spend their nodes in 216 steps and take another 1,950 settling against each other, which is what works the inner one out to meet the outer.',
     cfg: { seeds: [seed('ring'), seed('ring', 0, 0, 0, 0.45)], startRadius: 150,
            repulsionRadius: 85, maxNodes: 2200,
+           // the two rings are still pushing on each other when the last node
+           // goes in; stopping there leaves the pair half worked out
+           pauseAtBudget: false,
            style: 'pencil', fillOn: false, bg: '#140d14', stroke: '#f2542d',
            strokeWidth: 2, skPasses: 3, skDensity: 8,
            skLenMin: 12, skLenMax: 46, skJitMin: 1, skJitMax: 4,
