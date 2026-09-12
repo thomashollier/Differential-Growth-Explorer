@@ -92,7 +92,8 @@ for (const [name, cfg] of Object.entries(PRESETS)){
 ${sink.toString()}${guides}
 </svg>\n`;
 
-  const file = path.join(OUT, name.toLowerCase() + '.svg');
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const file = path.join(OUT, slug + '.svg');
   fs.writeFileSync(file, svg);
   console.log(`${name.padEnd(9)} ${String(sim.n).padStart(4)} nodes, `
     + `${sim.ranges.length} curve(s), ${steps} steps (${stop}) -> ${path.relative(__dirname, file)}`);

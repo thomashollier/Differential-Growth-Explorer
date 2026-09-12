@@ -523,6 +523,7 @@ function renderShapes(){
   dg.label = 'draw your own';
   dg.appendChild(new Option('Draw closed\u2026', 'draw:closed'));
   dg.appendChild(new Option('Draw open\u2026', 'draw:open'));
+  dg.appendChild(new Option('Import SVG\u2026', 'draw:svg'));
   shapeSel.appendChild(dg);
   shapeSel.value = '';
 }
@@ -532,6 +533,7 @@ shapeSel.onchange = () => {
   if (!v) return;
   if (v === 'draw:closed'){ beginDraw('seedClosed'); return; }
   if (v === 'draw:open'){ beginDraw('seedOpen'); return; }
+  if (v === 'draw:svg'){ shapeSel.value = ''; importSvg(); return; }
   placeShape(v);
 };
 
@@ -606,7 +608,7 @@ function finishSeed(how){
 
 function cancelSeed(){
   if (draw_.on) endDraw();
-  if (pendingIdx >= 0 && prevSeeds) P.seeds = prevSeeds;
+  if (pendingIdx >= 0 && prevSeeds) P.seeds = prevSeeds;   // an import may be several
   pendingIdx = -1; prevSeeds = null;
   selSeed = Math.min(selSeed, P.seeds.length - 1);
   setBarMode('off');
@@ -1663,6 +1665,110 @@ function renderConstraints(){
     chip.appendChild(name); chip.appendChild(del);
     box.appendChild(chip);
   }
+}
+
+/* ---------- importing an outline from an SVG ---------- */
+/* The browser can already walk any SVG shape: getPointAtLength on a path, rect,
+   circle, polygon and the rest gives points along it without parsing a single
+   path command. So the file is put into a detached SVG, every shape in it is
+   sampled at an even spacing, and each becomes a traced outline. */
+const IMPORT_SPACING = 6;        // sample spacing, in the file's own units
+const IMPORT_SPAN = 2.6;         // the import is scaled to this many seed radii
+
+function importSvg(){
+  const f = document.createElement('input');
+  f.type = 'file';
+  f.accept = '.svg,image/svg+xml';
+  f.onchange = () => {
+    const file = f.files && f.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { useSvg(r.result, file.name); }
+      catch (err){ flash('Could not read that SVG'); }
+    };
+    r.readAsText(file);
+  };
+  f.click();
+}
+
+function sampleShapes(svgText){
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (!root || root.nodeName === 'parsererror') return [];
+
+  // it has to be in the page for the geometry calls to work
+  const host = document.createElement('div');
+  host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;opacity:0';
+  host.appendChild(document.importNode(root, true));
+  document.body.appendChild(host);
+
+  const out = [];
+  try {
+    const live = host.firstElementChild;
+    const els = live.querySelectorAll('path,polygon,polyline,rect,circle,ellipse,line');
+    for (const el of els){
+      if (typeof el.getTotalLength !== 'function') continue;
+      let len = 0;
+      try { len = el.getTotalLength(); } catch { continue; }
+      if (!(len > 1)) continue;
+
+      // a path that closes itself, or a shape that is closed by definition
+      const d = (el.getAttribute('d') || '').trim();
+      const closed = el.nodeName === 'path' ? /[zZ]\s*$/.test(d)
+                   : !['polyline', 'line'].includes(el.nodeName);
+
+      const m = el.getCTM ? el.getCTM() : null;    // any transforms above it
+      const count = Math.max(closed ? 3 : 2, Math.min(4000, Math.round(len / IMPORT_SPACING)));
+      const pts = [];
+      for (let i = 0; i < count; i++){
+        const p = el.getPointAtLength((i / count) * len * (closed ? 1 : count / (count - 1)));
+        pts.push(m ? [p.x * m.a + p.y * m.c + m.e, p.x * m.b + p.y * m.d + m.f] : [p.x, p.y]);
+      }
+      out.push({ pts, closed, len });
+    }
+  } finally {
+    host.remove();
+  }
+  // biggest first, so the main outline leads and stray detail follows
+  return out.sort((a, b) => b.len - a.len);
+}
+
+function useSvg(text, filename){
+  const shapes = sampleShapes(text);
+  if (!shapes.length){ flash('No shapes found in that SVG'); return; }
+
+  // one scale and offset for the whole file, so the parts stay in register
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const s of shapes) for (const p of s.pts){
+    if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0];
+    if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+  }
+  const span = Math.max(maxX - minX, maxY - minY) || 1;
+  const k = (P.startRadius * IMPORT_SPAN) / span;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+
+  prevSeeds = (P.seeds || []).map(e => ({ ...e }));
+  const stem = (filename || 'import').replace(/\.svg$/i, '').slice(0, 24);
+  const added = [];
+  shapes.forEach((s, i) => {
+    const pts = s.pts.map(p => [ +((p[0] - cx) * k).toFixed(3), +((p[1] - cy) * k).toFixed(3) ]);
+    const entry = { id: newShapeId(), closed: s.closed, pts,
+                    name: shapes.length > 1 ? stem + ' ' + (i + 1) : stem };
+    P.drawnShapes = (P.drawnShapes || []).concat([entry]);
+    added.push({ key: 'drawn:' + entry.id, dx: 0, dy: 0, rot: 0, scale: 1 });
+  });
+
+  P.seeds = (P.seeds || []).concat(added);
+  pendingIdx = P.seeds.length - added.length;   // cancel drops the whole import
+  selSeed = P.seeds.length - 1;
+  setBarMode('place');
+  renderShapes();
+  applyShapeDefaults();
+  syncAll();
+  restart({ play:false });
+  flash('Imported ' + shapes.length + ' outline' + (shapes.length > 1 ? 's' : '')
+        + ' from ' + (filename || 'the file'));
 }
 
 /* ---------- saved settings ---------- */
