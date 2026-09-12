@@ -271,12 +271,16 @@ const PRESET_LIST = [
   },
   {
     name: 'Neon rabbit', group: 'creative',
-    note: 'A strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. Dialled in by hand and saved out of the app.',
+    note: 'A strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. The pause at the budget is off, so it carries on past its last node until the settle test calls it done.',
     cfg: { initialNodes: 10, startRadius: 125, seed: 10, minEdge: 11, maxEdge: 16,
            repulsionRadius: 100, attractionFactor: 1, repulsionFactor: 8,
            alignmentFactor: 1, noiseFactor: 0.1, damping: 0.6, smoothing: 0.3,
            repulsionSkip: 2, wallRepulsion: 1, splitJitter: 1, pruneShort: false,
-           maxNodes: 3200, settleAt: 0.01, stepsPerFrame: 1, follow: false,
+           // the budget stops the growth but not the run: the strand keeps
+           // threading the gaps for another 230 steps, and a loose threshold
+           // calls it done once it is only creeping
+           maxNodes: 3200, pauseAtBudget: false, settleAt: 0.07,
+           stepsPerFrame: 1, follow: false,
            frame: { cx: -583, cy: -333, rx: 2622, ry: 1567 }, style: 'smooth',
            tension: 0.33, strokeWidth: 1, fillOn: false, strokeOn: true, showNodes: false,
            showConstraints: true, accumulate: true, trailFade: 0.005, stampEvery: 1,

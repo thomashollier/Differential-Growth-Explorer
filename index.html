@@ -365,8 +365,8 @@ const CONTROLS = {
   sim: [
     {k:'stepsPerFrame',  lbl:'Speed',         min:0.1, max:12,    step:0.1, hint:'steps per frame — below 1 the growth is slowed so you can watch it'},
     {k:'maxNodes',       lbl:'Node budget',   min:200, max:20000, step:100, hint:'growth stops here to keep the frame rate up'},
-    {k:'settleAt',       lbl:'Settle at',     min:0, max:0.01, step:0.0002,
-     hint:'stop once the outline stops getting anywhere: how much its length changed over the last hundred steps, as a fraction. 0 never stops for this. The HUD shows the live figure'},
+    {k:'settleAt',       lbl:'Settle at',     min:0, max:0.1, step:0.0002, log:0.0002,
+     hint:'stop once the outline stops getting anywhere: how much its length changed over the last hundred steps, as a fraction. Off never stops for this. The HUD shows the live figure'},
     {k:'splitJitter',    lbl:'Split jitter',  min:0,   max:4,     step:0.1, hint:'random offset given to each new node'},
   ],
   render: [
@@ -451,19 +451,34 @@ function slider(def){
   const wrap = document.createElement('div');
   wrap.className = 'row';
   const dec = def.step < 1 ? (def.step < 0.05 ? 3 : 2) : 0;
+
+  /* A few of these span decades — a settle threshold is useful anywhere from a
+     couple of ten-thousandths to a tenth — and a linear track spends nearly all
+     of itself on the top decade. `log` gives the smallest non-zero value and
+     turns the track geometric, with the bottom notch reserved for off. */
+  const LOG = def.log > 0, POS = 1000;
+  const toPos = (v) => !LOG ? v
+    : (v <= def.log ? (v > 0 ? 1 : 0)
+       : Math.round(1 + (POS - 1) * Math.log(v / def.log) / Math.log(def.max / def.log)));
+  const fromPos = (p) => !LOG ? parseFloat(p)
+    : (+p <= 0 ? 0 : Number((def.log * Math.pow(def.max / def.log, (+p - 1) / (POS - 1))).toPrecision(2)));
+  const fmt = (v) => LOG ? (v > 0 ? String(Number(Number(v).toPrecision(2))) : 'off')
+                         : Number(v).toFixed(dec);
+
   wrap.innerHTML =
     `<b>${def.lbl}</b>` +
-    `<input type="range" min="${def.min}" max="${def.max}" step="${def.step}">` +
+    (LOG ? `<input type="range" min="0" max="${POS}" step="1">`
+         : `<input type="range" min="${def.min}" max="${def.max}" step="${def.step}">`) +
     `<i data-val></i>`;
   // the explanation lives in the tooltip rather than taking a permanent two
   // lines under every slider - there are eighteen of them
   if (def.hint) wrap.title = def.hint;
   const input = wrap.querySelector('input');
   const out = wrap.querySelector('[data-val]');
-  const sync = () => { input.value = P[def.k]; out.textContent = Number(P[def.k]).toFixed(dec); };
+  const sync = () => { input.value = toPos(P[def.k]); out.textContent = fmt(P[def.k]); };
   input.addEventListener('input', () => {
-    P[def.k] = parseFloat(input.value);
-    out.textContent = Number(P[def.k]).toFixed(dec);
+    P[def.k] = fromPos(input.value);
+    out.textContent = fmt(P[def.k]);
     if (def.restart) restart();
   });
   if (def.style) wrap.dataset.style = def.style;

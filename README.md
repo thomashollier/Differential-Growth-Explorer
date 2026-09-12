@@ -51,7 +51,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Topography](examples/topography.png) | **Topography** — the contour style: nine echoes at close spacing, each stepped round the colour wheel, so the form reads as banded ground rather than a line. Dialled in by hand and saved out of the app. |
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
-| ![Neon rabbit](examples/neon-rabbit.png) | **Neon rabbit** — a strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. Auto-fit off, framed for where it ends up. |
+| ![Neon rabbit](examples/neon-rabbit.png) | **Neon rabbit** — a strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. The pause at the budget is off, so it carries on past its last node until the settle test calls it done. Auto-fit off, framed for where it ends up. |
 | ![Verdigris](examples/verdigris.png) | **Verdigris** — the Meander forces again, but with the body filled in dark olive under mint strokes whose hue swings right round toward amber. The labyrinth reads as a corroded, speckled surface rather than a line. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
@@ -276,7 +276,9 @@ Two conditions end a run, and the HUD reports which.
 
 **The node budget** is reached. Splitting edges is the only outlet these forces have, so
 once it is shut off the curve keeps compressing and the outline degrades; the run stops
-there rather than spoiling what it made.
+there rather than spoiling what it made. Turn off **Pause when the budget is reached**
+and only the growth stops: the form carries on relaxing into whatever room it has left,
+until the settle test ends it. Sprawl and Neon rabbit both work that way.
 
 **The shape settles** — it is no longer getting anywhere. Measured as the change in the
 outline's total length over the last hundred steps, as a fraction, shown live in the HUD
@@ -293,5 +295,12 @@ after fifteen hundred steps and is left to carry on.
 
 An unbounded form never settles, since it can always spread further; those end at the
 budget. A walled one ends when it has filled its walls.
+
+The useful thresholds run over two decades, from a couple of ten-thousandths for a form
+that has genuinely stopped to a few hundredths for one only creeping, so the slider is
+geometric rather than linear and its bottom notch reads **off**, never stopping for this.
+A tight threshold and a loose one are different pictures, not different waits: Neon rabbit
+at 0.07 stops after 367 steps, and at 0.01 it runs to 954 and lays down nearly three times
+the record.
 
 Numerical instability also halts a run, though that is a fault rather than a finish.
