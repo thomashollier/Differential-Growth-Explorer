@@ -61,6 +61,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Verdigris](examples/verdigris.png) | **Verdigris** — the Meander forces again, but with the body filled in dark olive under mint strokes whose hue swings right round toward amber. The labyrinth reads as a corroded, speckled surface rather than a line. |
 | ![Topiary](examples/topiary.png) | **Topiary** — two obstacles with the constraints hidden, so nothing shows of them but the shape they impose. The growth packs tight where it is penned in and fans loose where it is not, and the record of every third frame in olive stipple turns that difference into a canopy over a trunk. Scatter power down at 0.75, which is what keeps a line readable inside the haze. |
 | ![Sheaf](examples/sheaf.png) | **Sheaf** — the lineage style: not the outline at all, but the path every node has taken, forking wherever a split gave the curve a new point. Each arm is the swept sheet of filaments that built it, tangled and dark at the trunk where the threads crowd and combed open where they fan out. 700 nodes go in a hundred steps; the six hundred after them are what draw the picture. |
+| ![Venation](examples/venation.png) | **Venation** — the same threads as the Sheaf, but each laid down at full strength when it branches and faded to nothing twenty-five steps later. Only the neighbourhood of a split survives, so the picture stops being the swept sheet and becomes the branching itself. Once the budget is spent nothing branches again and the record fades out, so this draws the growing and not the settling. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 The pictures are rendered from those definitions by `node make-examples.js`.
@@ -296,7 +297,16 @@ the **Style** menu on its header so it is reachable while the section is folded.
   drawn, so the picture is one connected branching structure — trunks running out from the
   centre, forking, ending in fans. It is also far sparser at the same setting: at 1 in 4,
   scattered keeps a quarter of the nodes and tree keeps about three per cent, because a
-  thread has to be descended from a drawn one to be recruited at all. Switching to it restarts the run, because the record
+  thread has to be descended from a drawn one to be recruited at all.
+
+  **Fade over** lays a thread down at full strength each time it branches and fades it to
+  nothing that many steps later, after which it stops being drawn at all. Since only the
+  neighbourhood of a split survives, the picture stops being the swept sheet and becomes
+  the branching: short values leave a bare dendritic skeleton, long ones fill back in
+  toward the unfaded look. It has a hard edge worth knowing — once the node budget is
+  spent nothing branches again, so the entire record fades out within that many steps of
+  the budget and every step after contributes nothing. With fading on you are drawing the
+  growing; with it off you are drawing the settling as well. Switching to it restarts the run, because the record
   has to be kept from the first step. Growth has to run *past* its budget for this to have
   anything to draw: all the interest is in what the nodes do once they have stopped being
   created.

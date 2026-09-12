@@ -119,6 +119,11 @@ class Growth {
     this.drw = new Uint8Array(this.cap);
     this.bdrw = new Uint8Array(this.cap);
     this.recruit = 0;
+    /* Steps since this node last branched. A thread can be drawn fading out
+       over that count, so it is bright where the curve is still gaining points
+       and gone where it has stopped. */
+    this.age = new Int32Array(this.cap);
+    this.bage = new Int32Array(this.cap);
     this.moves = [];                       // x0,y0,x1,y1 … since last consumed
     this.ranges = [];
     this.n = 0;
@@ -146,6 +151,8 @@ class Growth {
     this.bnid = new Int32Array(c);
     const dw = new Uint8Array(c); dw.set(this.drw.subarray(0, this.n)); this.drw = dw;
     this.bdrw = new Uint8Array(c);
+    const ag = new Int32Array(c); ag.set(this.age.subarray(0, this.n)); this.age = ag;
+    this.bage = new Int32Array(c);
     this.cap = c;
   }
 
@@ -199,6 +206,7 @@ class Growth {
       for (let i = 0; i < this.n; i++){
         this.nid[i] = this.nextId++;
         this.drw[i] = (i % keep0 === 0) ? 1 : 0;
+        this.age[i] = 0;
       }
     }
 
@@ -540,11 +548,17 @@ class Growth {
          stood some hundreds of steps ago. */
       const keep = Math.max(1, Math.round(p.lnKeep === undefined ? 1 : p.lnKeep));
       const tree = p.lnMode === 'descent';
-      const ids = this.nid, dw = this.drw;
+      const over = Math.max(0, Math.round(p.lnFade === undefined ? 0 : p.lnFade));
+      const ids = this.nid, dw = this.drw, ag = this.age;
       for (let i = 0; i < this.n; i++){
         const on = keep === 1 ? true : (tree ? dw[i] === 1 : ids[i] % keep === 0);
-        if (on) mv.push(PX[i], PY[i], X[i], Y[i]);
+        if (on){
+          // full strength at a branch, gone `over` steps later
+          const fresh = over === 0 ? 1 : 1 - ag[i] / over;
+          if (fresh > 0) mv.push(PX[i], PY[i], X[i], Y[i], fresh);
+        }
         PX[i] = X[i]; PY[i] = Y[i];
+        ag[i]++;
       }
     }
 
@@ -619,6 +633,7 @@ class Growth {
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const nid = this.nid, bnid = this.bnid;
     const drw = this.drw, bdrw = this.bdrw;
+    const age = this.age, bage = this.bage;
     const keep = Math.max(1, Math.round(this.p.lnKeep === undefined ? 1 : this.p.lnKeep));
     const maxE = this.p.maxEdge, maxE2 = maxE * maxE;
     const rnd = this.rnd, jit = this.p.splitJitter;
@@ -632,7 +647,9 @@ class Growth {
       for (let i = rg.s; i < rg.e; i++){
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
         // the first of the two keeps the identity, and the thread with it
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
+                    bage[m] = age[i]; }
+        const mine = m;
         m++;
         if (i < last && m < lim){
           const j = (i + 1 < rg.e) ? i + 1 : rg.s;
@@ -647,6 +664,8 @@ class Growth {
               bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = this.nextId++;
               // a fork off a drawn thread, every keep-th time one splits
               bdrw[m] = (drw[i] && (++this.recruit % keep === 0)) ? 1 : 0;
+              // the branching event resets both sides of the fork
+              bage[m] = 0; bage[mine] = 0;
             }
             m++; split = true;
           }
@@ -662,6 +681,7 @@ class Growth {
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
       this.nid = bnid; this.bnid = nid;
       this.drw = bdrw; this.bdrw = drw;
+      this.age = bage; this.bage = age;
     }
     this.ranges = out;
     this.n = m;
@@ -680,6 +700,7 @@ class Growth {
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const nid = this.nid, bnid = this.bnid;
     const drw = this.drw, bdrw = this.bdrw;
+    const age = this.age, bage = this.bage;
     const ranges = this.ranges, out = [];
     let m = 0, removed = false;
 
@@ -692,7 +713,8 @@ class Growth {
           removed = true; continue;
         }
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
+                    bage[m] = age[i]; }
         m++;
       }
       if (rg.closed && m - start > 8 &&
@@ -704,7 +726,8 @@ class Growth {
         m = start;
         for (let i = rg.s; i < rg.e; i++){
           bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
+          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i];
+                      bage[m] = age[i]; }
           m++;
         }
       }
@@ -718,6 +741,7 @@ class Growth {
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
       this.nid = bnid; this.bnid = nid;
       this.drw = bdrw; this.bdrw = drw;
+      this.age = bage; this.bage = age;
     }
     this.ranges = out;
     this.n = m;
@@ -1313,12 +1337,41 @@ const STYLES = {
       const baseHsv = hexToHsv(P.stroke);
       const gain = P.lnGain === undefined ? 1 : P.lnGain;
 
-      sink.begin();
-      for (let k = 0; k < mv.length; k += 4){
-        sink.moveTo(mv[k], mv[k + 1]);
-        sink.lineTo(mv[k + 2], mv[k + 3]);
+      const ink = inkFrom(P, baseHsv, rr) || P.stroke;
+      const lw = P.strokeWidth * unit;
+
+      if (!(P.lnFade > 0)){
+        sink.begin();
+        for (let k = 0; k < mv.length; k += 5){
+          sink.moveTo(mv[k], mv[k + 1]);
+          sink.lineTo(mv[k + 2], mv[k + 3]);
+        }
+        sink.stroke(ink, lw, gain * A);
+        return;
       }
-      sink.stroke(inkFrom(P, baseHsv, rr) || P.stroke, P.strokeWidth * unit, gain * A);
+
+      /* Fading: each segment carries its own strength, and one path per segment
+         would be tens of thousands of them. Sorting into a handful of bands and
+         drawing one path per band is indistinguishable at these opacities and
+         keeps the output the same size it was. */
+      const BANDS = 8;
+      const band = [];
+      for (let b = 0; b < BANDS; b++) band.push(null);
+      for (let k = 0; k < mv.length; k += 5){
+        let b = Math.round(mv[k + 4] * BANDS) - 1;
+        if (b < 0) b = 0; else if (b >= BANDS) b = BANDS - 1;
+        (band[b] || (band[b] = [])).push(k);
+      }
+      for (let b = 0; b < BANDS; b++){
+        const ks = band[b];
+        if (!ks) continue;
+        sink.begin();
+        for (const k of ks){
+          sink.moveTo(mv[k], mv[k + 1]);
+          sink.lineTo(mv[k + 2], mv[k + 3]);
+        }
+        sink.stroke(ink, lw, gain * A * ((b + 1) / BANDS));
+      }
     },
   },
 

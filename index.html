@@ -330,7 +330,7 @@ const P = {
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
   stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5, stScatPow:5,
-  lnGain:0.4, lnKeep:1, lnMode:'sample',
+  lnGain:0.4, lnKeep:1, lnMode:'sample', lnFade:0,
   stOpMin:0.25, stOpMax:0.9,
   ctCount:4, ctGap:7, ctFade:0.72,
   bg:'#ffffff', fill:'#000000', stroke:'#ff0000', showNodes:false, showConstraints:true, follow:true
@@ -406,6 +406,8 @@ const CONTROLS = {
      hint:'how heavily each step\u2019s threads are laid down \u2014 low values need many steps to build up, which is what keeps the weave readable'},
     {k:'lnKeep', lbl:'Draw 1 thread in', min:1, max:16, step:1, style:'lineage',
      hint:'thins the weave by drawing only every nth node\u2019s thread. Which ones are kept is fixed at birth, so a thread never flickers in and out; the ones left out still grow and still push, they are simply not drawn'},
+    {k:'lnFade', lbl:'Fade over', min:0, max:200, step:5, style:'lineage',
+     hint:'a thread is laid down at full strength when it branches and fades to nothing this many steps later, so the drawing shows only where the curve is still gaining points. 0 leaves every thread at full strength. Once the node budget is spent nothing branches again, so the whole record fades out within this many steps of that'},
     {k:'ctCount', lbl:'Echoes', min:0, max:14, step:1, style:'contour',
      hint:'how many offset copies are drawn either side of the outline'},
     {k:'ctGap', lbl:'Echo gap', min:1, max:30, step:0.5, style:'contour',

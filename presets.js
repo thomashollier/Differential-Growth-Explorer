@@ -695,6 +695,21 @@ const PRESET_LIST = [
            follow: false, frame: { cx: 25, cy: 30, rx: 972, ry: 986 } },
   },
   {
+    name: 'Venation', group: 'creative',
+    note: 'The same threads as the Sheaf, but each one laid down at full strength when it branches and faded to nothing twenty-five steps later. What survives is only the neighbourhood of a split, so the picture stops being the swept sheet and becomes the branching itself — where the curve was gaining points, and where it had already stopped. Once the budget is spent nothing branches again and the whole record fades out, so this draws the growing and not the settling.',
+    cfg: { seeds: [seed('circle')], minEdge: 15, maxEdge: 24, repulsionRadius: 150,
+           repulsionFactor: 9, maxNodes: 700,
+           pauseAtBudget: false, settleAt: 0.008, maxSteps: 1500,
+           style: 'lineage', strokeWidth: 0.8, fillOn: false,
+           // fading throws most of the record away, so each surviving thread
+           // has to carry twice the weight it does in the Sheaf
+           lnFade: 25, lnGain: 0.7,
+           accumulate: true, stampEvery: 1, trailFade: 0,
+           stackEvery: 1, stackFade: 1,
+           bg: '#07090d', stroke: '#bfe2ff',
+           follow: false, frame: { cx: 25, cy: 30, rx: 972, ry: 986 } },
+  },
+  {
     name: 'Ember', group: 'creative',
     note: 'Two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. The pause at the budget is off: the rings spend their nodes in 216 steps and take another 1,950 settling against each other, which is what works the inner one out to meet the outer.',
     cfg: { seeds: [seed('ring'), seed('ring', 0, 0, 0, 0.45)], startRadius: 150,
