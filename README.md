@@ -92,12 +92,23 @@ against stored digests.
 
 The **Seed shape** menu holds the primitives (circle — the original's distorted circle —
 plus ring, star, square, and an open line), anything you have traced, and *Draw closed…*
-/ *Draw open…*.
+/ *Draw open…* / *Import SVG…*.
 
 Choosing any of them puts the shape on the canvas provisionally, and a bar over the
 canvas asks what to do with it: **Add** puts it alongside what is already growing,
 **Replace** makes it the only seed, **Cancel** leaves things as they were. Tracing works
 the same way, with Add and Replace live once the line is long enough.
+
+**Import SVG…** reads a file and turns every shape in it into a traced outline. It walks
+each shape with `getPointAtLength` rather than parsing path commands, so paths, polygons,
+rectangles, circles and the rest all work and their transforms come along; a path that
+closes itself becomes a closed seed and one that does not stays open. The file is scaled
+and centred as a unit so its parts stay in register, and an import arrives on the same
+bar, so cancelling drops all of it. `samples/elephant.svg` is there to try it on.
+
+Growth is expansion, so a detailed silhouette used as a *seed* swells out of recognition
+within a hundred steps — the elephant is a coral by step eighty. Import it as a boundary
+instead if you want the shape itself to survive.
 
 The panel then reads as the menu, the pills for what is currently seeded, and **X, Y,
 Rotate, Scale** for whichever pill is selected. You can drag a seed on the canvas too,
