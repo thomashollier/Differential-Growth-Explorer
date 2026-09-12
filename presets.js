@@ -390,22 +390,24 @@ const PRESET_LIST = [
   },
   {
     name: 'Rings', group: 'creative',
-    note: 'Stacking, with the oldest layers sinking back: every few steps is left in the picture rather than erased. Auto-fit is off, because the layers only line up if the view holds still.',
+    note: 'Stacking at long intervals, so the record comes out as separate outlines rather than a blur: eleven snapshots of one growth, nested inside each other like the rings of a trunk. Nothing fades, so the first reads as clearly as the last and you can follow any single arm outward through its whole history. Auto-fit is off, because the layers only line up if the view holds still.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110,
-           stackEvery: 3, stackFade: 0.35, follow: false,
+           // ten steps apart is the gap where the outlines separate. Any closer
+           // and they merge into the continuous mass the Sediment is made of
+           stackEvery: 10, stackFade: 1, follow: false,
            // framed for the size it finishes at, so it grows into the picture
            // rather than off the edge of it
            frame: { cx: -46, cy: 7, rx: 887, ry: 906 },
-           accumulate: true, stampEvery: 3, trailFade: 0.03,
+           accumulate: true, stampEvery: 10, trailFade: 0,
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
   {
     name: 'Sediment', group: 'creative',
-    note: 'The same, with nothing fading: every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last.',
+    note: 'The other end of the same control: a layer every step instead of every ten, so the outlines never separate and the record builds into one continuous body. What the Rings keeps as history this keeps as substance — the arms read as solid where the growth dwelt and thin where it swept through.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
-           stackEvery: 3, stackFade: 1, follow: false,
+           stackEvery: 1, stackFade: 1, follow: false,
            frame: { cx: 3, cy: 6, rx: 884, ry: 894 },
-           accumulate: true, stampEvery: 3, trailFade: 0,
+           accumulate: true, stampEvery: 1, trailFade: 0,
            fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
   },
   {
@@ -676,6 +678,21 @@ const PRESET_LIST = [
              [-304.907,-1062.033],[-417.899,-1073.574],[-514.679,-1118.694],
              [-605.249,-1183.818],[-658.667,-1267.408],[-713.625,-1364.738],
              [-659.382,-1452.834]]] },
+  },
+  {
+    name: 'Sheaf', group: 'creative',
+    note: 'Not the outline at all. Every node leaves a thread behind it, and a node born from a split starts its thread where its parent stood, so the record forks wherever the curve gained a point. What the other styles draw as a rim, this draws as the history that built it: each arm is a swept sheet of filaments, dark and tangled at the trunk where the threads crowd, combed open where they fan out.',
+    cfg: { seeds: [seed('circle')], minEdge: 15, maxEdge: 24, repulsionRadius: 150,
+           repulsionFactor: 9, maxNodes: 700,
+           // 700 nodes go in a hundred steps and the other six hundred are what
+           // draw the picture, so the run has to carry on past the budget
+           pauseAtBudget: false, settleAt: 0.008, maxSteps: 1500,
+           style: 'lineage', strokeWidth: 0.8, lnGain: 0.35, fillOn: false,
+           // the record is the picture: nothing is erased and nothing fades
+           accumulate: true, stampEvery: 1, trailFade: 0,
+           stackEvery: 1, stackFade: 1,
+           bg: '#0d0f14', stroke: '#e8d8a0',
+           follow: false, frame: { cx: 25, cy: 30, rx: 972, ry: 986 } },
   },
   {
     name: 'Ember', group: 'creative',

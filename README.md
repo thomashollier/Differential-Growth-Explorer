@@ -60,6 +60,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Neon rabbit](examples/neon-rabbit.png) | **Neon rabbit** — a strand traced by hand, set loose among four drawn obstacles and stacked every step. It threads the gaps between them in cyan, and the record of where it has been fills the space they leave. The pause at the budget is off, so it carries on past its last node until the settle test calls it done. Auto-fit off, framed for where it ends up. |
 | ![Verdigris](examples/verdigris.png) | **Verdigris** — the Meander forces again, but with the body filled in dark olive under mint strokes whose hue swings right round toward amber. The labyrinth reads as a corroded, speckled surface rather than a line. |
 | ![Topiary](examples/topiary.png) | **Topiary** — two obstacles with the constraints hidden, so nothing shows of them but the shape they impose. The growth packs tight where it is penned in and fans loose where it is not, and the record of every third frame in olive stipple turns that difference into a canopy over a trunk. Scatter power down at 0.75, which is what keeps a line readable inside the haze. |
+| ![Sheaf](examples/sheaf.png) | **Sheaf** — the lineage style: not the outline at all, but the path every node has taken, forking wherever a split gave the curve a new point. Each arm is the swept sheet of filaments that built it, tangled and dark at the trunk where the threads crowd and combed open where they fan out. 700 nodes go in a hundred steps; the six hundred after them are what draw the picture. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 The pictures are rendered from those definitions by `node make-examples.js`.
@@ -275,6 +276,15 @@ the **Style** menu on its header so it is reachable while the section is folded.
   outline and it comes back as a line with a little fuzz on it.
 - **Contour** — the outline echoed outward and inward: how many, how far apart, and how
   fast they fade.
+- **Lineage** — the only style that draws history rather than shape. Each node leaves a
+  thread behind it every step, and a node born from a split starts its thread where its
+  parent stood, so the record forks wherever the curve gained a point. The picture is the
+  accumulation, so this style turns stacking on and keeps it on; **Thread weight** sets how
+  heavily one step is laid down, and low values are right — the weave comes from hundreds
+  of passes, not from one dark one. Switching to it restarts the run, because the record
+  has to be kept from the first step. Growth has to run *past* its budget for this to have
+  anything to draw: all the interest is in what the nodes do once they have stopped being
+  created.
 - **Pencil sketch** — hundreds of short overlapping strokes. **Length**, **Follow
   curve**, **Wander**, **Width ×**, **Opacity**, **Hue ±**, **Saturation ±** and
   **Value ±** are two-handled sliders: each stroke takes its own value from between the

@@ -94,6 +94,18 @@ class Growth {
     this.fy = new Float64Array(this.cap);
     this.cid = new Int32Array(this.cap);    // which curve each node belongs to
     this.bcid = new Int32Array(this.cap);
+
+    /* Lineage: where each node stood at the end of the last step, carried
+       through splits so that a node created this step starts from wherever its
+       left-hand parent was. Drawing those segments traces the history of the
+       curve rather than its shape — one thread per node, branching at every
+       split. Off unless a style asks for it, since it doubles the per-node
+       arrays and the bookkeeping through split and prune. */
+    this.px = new Float64Array(this.cap);
+    this.py = new Float64Array(this.cap);
+    this.bpx = new Float64Array(this.cap);
+    this.bpy = new Float64Array(this.cap);
+    this.moves = [];                       // x0,y0,x1,y1 … since last consumed
     this.ranges = [];
     this.n = 0;
     this.steps = 0;
@@ -114,6 +126,8 @@ class Growth {
     this.fx = new Float64Array(c); this.fy = new Float64Array(c);
     const ci = new Int32Array(c); ci.set(this.cid.subarray(0, this.n)); this.cid = ci;
     this.bcid = new Int32Array(c);
+    this.px = cp(this.px); this.py = cp(this.py);
+    this.bpx = new Float64Array(c); this.bpy = new Float64Array(c);
     this.cap = c;
   }
 
@@ -121,6 +135,10 @@ class Growth {
   reset(){
     const p = this.p;
     this.rnd = mulberry32(p.seed >>> 0);
+    // off while the seed is subdivided below, or the tree would open with a
+    // burst of branches that belong to setting up rather than to growing
+    this.tracking = false;
+    this.moves = [];
     const curves = this.seedCurves();
 
     let total = 0;
@@ -150,6 +168,15 @@ class Growth {
       if (this.n === before) break;
     }
     this.applyBarriers();
+
+    // every thread starts where its node stands on the finished seed outline
+    // a history style needs the shadow kept; nothing else pays for it
+    this.tracking = !!(p.trackLineage || (STYLES[p.style] && STYLES[p.style].needsHistory));
+    if (this.tracking){
+      this.px.set(this.x.subarray(0, this.n));
+      this.py.set(this.y.subarray(0, this.n));
+    }
+
     this.steps = 0;
     this.lastGrowth = 0;
     this.motion = 1;                 // "still moving" until measured otherwise
@@ -477,6 +504,17 @@ class Growth {
        adds a ten-thousandth of its length per step while filling perfectly
        well, which is indistinguishable from nothing. Over a hundred steps the
        difference between creeping and finished is plain. */
+    /* One segment per node, from where it stood to where it stands. A node born
+       this step starts at its parent, so that segment is the fork. The consumer
+       empties this; nothing accumulates if nobody is looking. */
+    if (this.tracking){
+      const mv = this.moves, X = this.x, Y = this.y, PX = this.px, PY = this.py;
+      for (let i = 0; i < this.n; i++){
+        mv.push(PX[i], PY[i], X[i], Y[i]);
+        PX[i] = X[i]; PY[i] = Y[i];
+      }
+    }
+
     const W = this.lenRing.length;
     const old = this.lenRing[this.lenAt];
     this.lenRing[this.lenAt] = len;
@@ -544,6 +582,8 @@ class Growth {
     this.grow(n * 2 + 4);
     const x = this.x, y = this.y, vx = this.vx, vy = this.vy, cid = this.cid;
     const bx = this.bx, by = this.by, bvx = this.bvx, bvy = this.bvy, bcid = this.bcid;
+    const track = this.tracking;
+    const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const maxE = this.p.maxEdge, maxE2 = maxE * maxE;
     const rnd = this.rnd, jit = this.p.splitJitter;
     const ranges = this.ranges, out = [];
@@ -555,6 +595,7 @@ class Growth {
       const last = rg.closed ? rg.e : rg.e - 1;
       for (let i = rg.s; i < rg.e; i++){
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
         m++;
         if (i < last && m < lim){
           const j = (i + 1 < rg.e) ? i + 1 : rg.s;
@@ -563,6 +604,9 @@ class Growth {
             bx[m] = (x[i] + x[j]) / 2 + (rnd() * 2 - 1) * jit;
             by[m] = (y[i] + y[j]) / 2 + (rnd() * 2 - 1) * jit;
             bvx[m] = 0; bvy[m] = 0; bcid[m] = c;
+            // born here, so its thread starts where its left parent stood: that
+            // segment is the branch
+            if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
             m++; split = true;
           }
         }
@@ -573,6 +617,9 @@ class Growth {
     if (!split) return;
     this.x = bx; this.y = by; this.vx = bvx; this.vy = bvy; this.cid = bcid;
     this.bx = x; this.by = y; this.bvx = vx; this.bvy = vy; this.bcid = cid;
+    if (track){
+      this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
+    }
     this.ranges = out;
     this.n = m;
     this.lastGrowth = this.steps;
@@ -586,6 +633,8 @@ class Growth {
     const thresh = this.p.minEdge * 0.5;
     const x = this.x, y = this.y, vx = this.vx, vy = this.vy, cid = this.cid;
     const bx = this.bx, by = this.by, bvx = this.bvx, bvy = this.bvy, bcid = this.bcid;
+    const track = this.tracking;
+    const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const ranges = this.ranges, out = [];
     let m = 0, removed = false;
 
@@ -598,6 +647,7 @@ class Growth {
           removed = true; continue;
         }
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
         m++;
       }
       if (rg.closed && m - start > 8 &&
@@ -609,6 +659,7 @@ class Growth {
         m = start;
         for (let i = rg.s; i < rg.e; i++){
           bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
+          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
           m++;
         }
       }
@@ -618,6 +669,9 @@ class Growth {
     if (!removed || m === n) return;
     this.x = bx; this.y = by; this.vx = bvx; this.vy = bvy; this.cid = bcid;
     this.bx = x; this.by = y; this.bvx = vx; this.bvy = vy; this.bcid = cid;
+    if (track){
+      this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
+    }
     this.ranges = out;
     this.n = m;
   }
@@ -1191,6 +1245,33 @@ const STYLES = {
           sink.dot(px + nx, py + ny, r, inkFrom(P, baseHsv, rr) || P.stroke, rr(oLo, oHi) * A);
         }
       }
+    },
+  },
+
+  /* Not the outline at all: the path every node has taken since the last time
+     anyone looked. A node created by a split starts from its parent, so the
+     record forks wherever the curve gained a point. Stack it and the picture
+     becomes the history of the growth rather than a snapshot of it — a root
+     system, where the outline styles draw the rim. */
+  lineage: {
+    label: 'Lineage',
+    params: ['strokeWidth', 'lnGain', 'skHue', 'skSat', 'skVal'],
+    needsHistory: true,
+    render(sink, sim, P, unit, alpha, variant){
+      const mv = sim.moves;
+      if (!mv || mv.length === 0) return;
+      const A = alpha === undefined ? 1 : alpha;
+      const rnd = variantSeed(P, 0x27d4eb2f, variant);
+      const rr = (a, b) => a + rnd() * (b - a);
+      const baseHsv = hexToHsv(P.stroke);
+      const gain = P.lnGain === undefined ? 1 : P.lnGain;
+
+      sink.begin();
+      for (let k = 0; k < mv.length; k += 4){
+        sink.moveTo(mv[k], mv[k + 1]);
+        sink.lineTo(mv[k + 2], mv[k + 3]);
+      }
+      sink.stroke(inkFrom(P, baseHsv, rr) || P.stroke, P.strokeWidth * unit, gain * A);
     },
   },
 

@@ -29,9 +29,13 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   // heavily damped settings need far more steps to fill, so a preset may ask
   // for more than the usual allowance
   const cap = P.maxSteps || 4000;
+  const style0 = STYLES[P.style] || STYLES.smooth;
   let steps = 0, stop = 'step limit', settleRun = 0;
   for (; steps < cap; steps++){
     sim.step(null);
+    // a history style records every node's motion; nothing consumes it on this
+    // pass, so drop it rather than hold the whole run in memory
+    if (style0.needsHistory) sim.moves.length = 0;
     if (P.stackEvery && steps % P.stackEvery === 0) layers.push(sim.steps);
     if (sim.unstable){ stop = 'unstable'; break; }
     // a preset that turns off the pause keeps relaxing after the budget is
@@ -68,10 +72,14 @@ for (const [name, cfg] of Object.entries(PRESETS)){
         // a different random draw per layer, so stacked marks do not pile up
         // into tracks the way an identical draw repeated would
         style.render(sink, replay, Object.assign({}, P, { fillOn: false }), unit, alpha, replay.steps);
+        if (style.needsHistory) replay.moves.length = 0;
       }
     }
   }
-  style.render(sink, sim, P, unit);
+  /* A history style has already drawn everything during the replay, and its
+     final frame holds only the last step's segments. Drawing it again would
+     stamp that one step at full strength over the record. */
+  if (!style.needsHistory) style.render(sink, sim, P, unit);
 
   // the page takes the shape of what grew, so a wide form is not letterboxed
   const outW = Math.round(w >= h ? SIZE : SIZE * (w / h));
