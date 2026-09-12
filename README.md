@@ -291,6 +291,14 @@ pixel covers. So a sketch keeps the same character whether you are zoomed out on
 4 000-node form or exporting at 4 000 px, exactly as a real pen does not get finer
 because the subject got bigger.
 
+The corollary is that these styles do not survive being resized afterwards. Grain asks
+for dots of 0.2 to 1.3 px and Scribble for strokes of 0.6 px: shrink the finished image
+by half and the finest of them fall under a pixel and resample into a grey wash, which
+looks like a different and much weaker setting rather than a smaller picture. Export at
+the size you want to look at it, and if you need a smaller image, render it small rather
+than scaling one down. The example pictures here are written out at the size they were
+measured for, which is why `to-png.sh` converts one to one.
+
 **Keep every frame** (Appearance → Stacking) stops clearing the canvas: each frame is
 kept and the next drawn over it, so the evolution piles up into one image. **Stack every**
 sets the steps between layers — low values lay down a dense blur, high ones leave distinct

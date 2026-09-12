@@ -1,17 +1,17 @@
 #!/bin/sh
 # The README shows PNGs; the SVGs are the real output. Re-run after
 # make-examples.js or make-sweeps.js. Needs rsvg-convert (brew install librsvg).
+#
+# Everything converts 1:1, at the pixel size the SVG declares, and that matters
+# more than it looks. A render style measures its marks in OUTPUT PIXELS -- a
+# stipple dot of radius 1.3 means 1.3 pixels of the finished image, not of the
+# world. make-examples.js renders for a 1000px image, so resizing on the way to
+# PNG resizes the marks with it. The old 520px output put every one of them at
+# 52%, which drove the fine end under a pixel -- Grain's smallest dot from 0.2px
+# to 0.1px, Scribble's thinnest stroke from 0.6px to 0.31px -- where resampling
+# turns marks into a grey wash. Do not add -w/-h here.
 set -e
-for f in examples/*.svg; do
-  w=$(sed -n 's/.*<svg[^>]*width="\([0-9]*\)".*/\1/p' "$f" | head -1)
-  h=$(sed -n 's/.*<svg[^>]*height="\([0-9]*\)".*/\1/p' "$f" | head -1)
-  if [ "$w" -ge "$h" ]; then rsvg-convert -w 520 "$f" -o "${f%.svg}.png"
-  else rsvg-convert -h 520 "$f" -o "${f%.svg}.png"; fi
-done
-
-# the sweep strips are wide and already sized in output pixels, so they go out
-# at their own width rather than being fitted to a box
-for f in sweeps/*.svg; do
+for f in examples/*.svg sweeps/*.svg; do
   [ -e "$f" ] || continue
   rsvg-convert "$f" -o "${f%.svg}.png"
 done

@@ -345,7 +345,7 @@ const PRESET_LIST = [
   },
   {
     name: 'Grain', group: 'creative',
-    note: 'The stipple style at close spacing with the dots thrown well off the line, stacked as it grows: the outline reads as a drifting grain rather than an edge. Dialled in by hand and saved out of the app.',
+    note: 'The stipple style at close spacing with the dots held off the line rather than scattered across it: none falls within 2.3 of the outline, and a low scatter power crowds the rest against the inner edge of the band. Stacked as it grows, so every frame leaves its own wall of grain and the record reads as depth.',
     cfg: { seeds: [seed('circle')], initialNodes: 10, startRadius: 125, seed: 10,
            minEdge: 11, maxEdge: 16, repulsionRadius: 100, attractionFactor: 1,
            repulsionFactor: 8, alignmentFactor: 1, noiseFactor: 0.1, damping: 0.6,
@@ -359,8 +359,12 @@ const PRESET_LIST = [
            skLenMin: 16, skLenMax: 54, skBowMin: 0.2, skBowMax: 0.5, skJitMin: 1.2,
            skJitMax: 3.6, skWidthMin: 0.4, skWidthMax: 1.6, skOpMin: 0.25, skOpMax: 0.8,
            skHueMin: -13, skHueMax: 16, skSatMin: 0, skSatMax: 0, skValMin: -0.27,
-           skValMax: 0.35, stSpacing: 1.5, stSizeMin: 0.2, stSizeMax: 1.3, stScatMin: 0,
-           stScatMax: 8.8, stOpMin: 0.23, stOpMax: 0.95, ctCount: 4, ctGap: 7, ctFade: 0.72,
+           skValMax: 0.35, stSpacing: 1.5, stSizeMin: 0.2, stSizeMax: 1.3,
+           // a dead zone at the line and a low power together: no dot falls
+           // within 2.3 of the outline, and past that they crowd the inner edge
+           // of the band, so the grain reads as a wall rather than a smear
+           stScatMin: 2.3, stScatMax: 13.4, stScatPow: 0.75,
+           stOpMin: 0.23, stOpMax: 0.95, ctCount: 4, ctGap: 7, ctFade: 0.72,
            // a layer every dozen steps for the still picture; the app stacks
            // far more finely, but every dot of every layer ends up in the file
            stackEvery: 12, stackFade: 0.4 },
