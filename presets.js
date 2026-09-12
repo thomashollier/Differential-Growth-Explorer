@@ -71,6 +71,14 @@ const PRESET_LIST = [
     cfg: { seeds: [seed('circle')], maxNodes: 3200 },
   },
   {
+    name: 'Rosette', group: 'growth',
+    note: 'The Coral again, at the same budget, with the repulsion radius cut by a third and the edges shortened to match. The radius sets the gap the folds keep from each other, so the same three thousand nodes buy many more and finer arms: they radiate from the centre, forking as they go, and fill a disc with a clean rim instead of sprawling into a few fat lobes. Stopped at the budget, which is what keeps that rim sharp.',
+    cfg: { seeds: [seed('circle')], minEdge: 9, repulsionRadius: 65, maxNodes: 3200,
+           // held still: the point is the shape of the whole disc, and following
+           // it would rescale the picture all the way in
+           follow: false, frame: { cx: 29, cy: 34, rx: 1424, ry: 851 } },
+  },
+  {
     name: 'Lobes', group: 'growth',
     note: 'A repulsion radius half again as wide, longer edges, and a budget of six hundred: fat arms with room between them instead of a filled disc. It spends the budget in a hundred steps and then takes nearly nine hundred more to settle, pushing the arms apart into an even splay.',
     cfg: { seeds: [seed('circle')], repulsionRadius: 150, repulsionFactor: 9,
