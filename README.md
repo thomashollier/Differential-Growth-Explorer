@@ -9,7 +9,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the thirteen examples below, as complete configurations |
+| `presets.js` | the fourteen examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -18,48 +18,41 @@ of step.
 
 ---
 
-## The thirteen presets
+## The presets
 
-Each is a complete configuration — seeds, forces, constraints and drawing — but the two
-halves are kept apart in the app. The **Presets** menu applies only the *form*: what
-grows, the forces, any constraints. The **Look** menu in Appearance applies only the
-*drawing*: style, colours, and every setting that style has. So you can put any look on
-any form without either one clobbering the other, and neither touches your speed,
-auto-fit or guides. The pictures were rendered from those same definitions by
-`node make-examples.js`.
+Each is a whole picture — seeds, forces, constraints, drawing and whether the view
+follows — and selecting one applies all of it. They fall into two kinds.
 
-### Starting from a primitive
+### Growth and shape
+
+What the simulation itself can do. All six wear the same black body and red edge, so the
+only thing differing between them is the form, and any walls are left visible.
 
 | | |
 |---|---|
-| ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The original script's look: black fill, red outline. Everything below is a departure from this. |
-| ![Neon](examples/neon.png) | **Neon** — dialled in by hand in the app and saved out as a settings file, used here verbatim. Weak attraction against heavy repulsion with the damping right down, so the curve settles slowly and wanders instead of packing radially: a labyrinth rather than a disc. |
-| ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, and stopped early. Fat arms with room between them instead of a filled disc. Same algorithm, four different numbers. |
-| ![Strand](examples/strand.png) | **Strand** — an open seed. With two loose ends instead of a ring it meanders rather than closing into a blob, and the fill turns itself off, since filling an open path just closes it across the ends. |
+| ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The baseline the rest depart from. |
+| ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, stopped early. Fat arms with room between them instead of a filled disc. |
+| ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. |
+| ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
+| ![Twins](examples/twins.png) | **Twins** — two seeds grow as separate curves. They never join, but they push on each other and meet along a seam. |
+| ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
-### Combining shapes
+### Applications
 
-| | |
-|---|---|
-| ![Twins](examples/twins.png) | **Twins** — two circles placed apart. Each grows as its own curve: they never join, but they repel each other, so they compete for the middle ground and meet along a seam. Any number of seeds can share a canvas. |
-| ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls push back like a line of nodes, so the curve holds the same distance from them that it holds from itself, and the run ends when the boundary is full rather than when the node budget runs out. |
-
-### Render styles
+Whole pictures, where the drawing is as much the point as the shape.
 
 | | |
 |---|---|
-| ![Graphite](examples/graphite.png) | **Graphite** — the same kind of outline drawn as hundreds of short overlapping strokes, each taking its own length, width and opacity from a range. |
-| ![Scribble](examples/scribble.png) | **Scribble** — wide ranges, long strokes that mostly ignore the curve, four passes. The same geometry, drawn loose. |
-| ![Grain](examples/grain.png) | **Grain** — the stipple style: the outline read as dots rather than a line, each taking its own size and opacity, scattered a little off the true edge. |
+| ![Graphite](examples/graphite.png) | **Graphite** — the pencil style: the outline as hundreds of short strokes, each taking its own length, width and opacity from a range. |
+| ![Scribble](examples/scribble.png) | **Scribble** — wide ranges and long strokes that mostly ignore the curve, four passes of loose hatching. |
+| ![Grain](examples/grain.png) | **Grain** — the stipple style: the outline read as dots, scattered a little off the true edge. |
 | ![Topography](examples/topography.png) | **Topography** — the contour style: the outline echoed outward and inward in fading steps, so the form reads like a map. |
+| ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
+| ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
+| ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a much larger budget. Dialled in by hand in the app and saved out as a settings file, used verbatim. |
+| ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
-### Keeping the history
-
-| | |
-|---|---|
-| ![Rings](examples/rings.png) | **Rings** — stacking. Every few steps is left in the picture rather than erased, so the whole evolution of the outline shows at once, like growth rings. The form is the same as Coral's; what you are looking at is its history. Fade is up, so the oldest layers sit back. |
-| ![Sediment](examples/sediment.png) | **Sediment** — the same thing with nothing fading. Every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last. |
-| ![Ember](examples/ember.png) | **Ember** — two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
+The pictures are rendered from those definitions by `node make-examples.js`.
 
 ---
 
@@ -139,9 +132,6 @@ and when an edge splits. **Speed** goes below 1 step per frame; growth saturates
 
 Everything visual is in one section, under Draw / Colour / Line / Sketch headings, with
 the **Style** menu on its header so it is reachable while the section is folded.
-
-**Look** (top of Appearance) takes the whole appearance of any preset — style, colours
-and all its settings — leaving what is growing alone.
 
 - **Smooth** — the Bézier outline, fill and stroke.
 - **Stipple** — dots along the outline: spacing, size, scatter and opacity, the last

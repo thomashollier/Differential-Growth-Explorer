@@ -71,10 +71,23 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   const outW = Math.round(w >= h ? SIZE : SIZE * (w / h));
   const outH = Math.round(h >= w ? SIZE : SIZE * (h / w));
 
+  // a growth preset that has walls shows them, the way the app does, since the
+  // whole point of that picture is what the walls did
+  let guides = '';
+  if (P.showConstraints){
+    const poly = (pts) => pts.map((q, i) => `${i ? 'L' : 'M'} ${f(q[0])} ${f(q[1])}`).join(' ') + ' Z';
+    const dash = Math.max(4, unit * 7);
+    for (const g of [P.boundary, ...(P.obstacles || [])]){
+      if (!g) continue;
+      guides += `\n<path d="${poly(g)}" fill="none" stroke="#4ea3ff" stroke-opacity="0.75" `
+             + `stroke-width="${(unit * 1.5).toFixed(2)}" stroke-dasharray="${dash.toFixed(1)} ${(dash * 0.8).toFixed(1)}"/>`;
+    }
+  }
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${outW}" height="${outH}" `
     + `viewBox="${f(x0)} ${f(y0)} ${f(w)} ${f(h)}">
 <rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}" fill="${P.bg}"/>
-${sink.toString()}
+${sink.toString()}${guides}
 </svg>\n`;
 
   const file = path.join(OUT, name.toLowerCase() + '.svg');

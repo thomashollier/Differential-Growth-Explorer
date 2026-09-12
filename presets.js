@@ -1,6 +1,16 @@
 /* ============================================================================
-   Presets — eight complete examples, each one a full configuration: what it
-   grows from, the forces, any constraints, and how it is drawn.
+   Presets — each one a whole picture: what grows, the forces, any constraints,
+   how it is drawn, and whether the view follows it. Selecting one applies all
+   of that.
+
+   They come in two kinds.
+
+   growth & shape — what the simulation itself can do. All of them wear the same
+     black body and red edge, so the only thing differing between them is the
+     form, and any constraints are left visible.
+
+   applications — whole pictures, where the drawing is as much the point as the
+     shape: the render styles, stacked histories, colour.
 
    Loaded by index.html with a <script> tag and by make-examples.js through
    require(), so the pictures in the README are made from these exact settings.
@@ -24,7 +34,6 @@ const seed = (key, dx, dy, rot, scale) =>
 
 /* Shared starting point, so each preset below only states what it changes. */
 const BASE = {
-  accumulate: false, trailFade: 0, stampEvery: 4,
   initialNodes: 10, startRadius: 125, seed: 10,
   minEdge: 11, maxEdge: 16, repulsionRadius: 100,
   attractionFactor: 1, repulsionFactor: 8, alignmentFactor: 1,
@@ -32,7 +41,8 @@ const BASE = {
   wallRepulsion: 1, splitJitter: 1, pruneShort: false,
   boundary: null, obstacles: [], drawnShapes: [],
   style: 'smooth', tension: 0.33, strokeWidth: 2,
-  fillOn: true, strokeOn: true, showNodes: false,
+  fillOn: true, strokeOn: true, showNodes: false, showConstraints: false,
+  follow: true, accumulate: false, trailFade: 0, stampEvery: 4,
   bg: '#ffffff', fill: '#000000', stroke: '#ff0000',
   skPasses: 2, skDensity: 9,
   skLenMin: 16, skLenMax: 54, skBowMin: 0.2, skBowMax: 0.5,
@@ -45,48 +55,60 @@ const BASE = {
 };
 
 const PRESET_LIST = [
+
+  /* ---- growth & shape: same ink throughout, only the form changes ---- */
+
   {
-    name: 'Coral',
-    note: 'One circle, left to fill the plane. The original script’s look: black fill, red outline.',
+    name: 'Coral', group: 'growth',
+    note: 'One circle, left to fill the plane. The baseline every other form departs from.',
     cfg: { seeds: [seed('circle')], maxNodes: 3200 },
   },
   {
-    name: 'Lobes',
-    note: 'A repulsion radius half again as wide, longer edges, and stopped early: fat arms with room between them instead of a filled disc. Same algorithm, four different numbers.',
+    name: 'Lobes', group: 'growth',
+    note: 'A repulsion radius half again as wide, longer edges, and stopped early: fat arms with room between them instead of a filled disc.',
     cfg: { seeds: [seed('circle')], repulsionRadius: 150, repulsionFactor: 9,
            minEdge: 15, maxEdge: 24, maxNodes: 600 },
   },
   {
-    name: 'Strand',
-    note: 'An open seed has two ends, so it meanders instead of closing into a blob.',
+    name: 'Meander', group: 'growth',
+    note: 'Weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially.',
+    cfg: { seeds: [seed('circle')], seed: 341, repulsionRadius: 99,
+           attractionFactor: 0.52, repulsionFactor: 11.7, alignmentFactor: 1.21,
+           damping: 0.23, maxNodes: 2600, maxSteps: 12000, strokeWidth: 2.6 },
+  },
+  {
+    name: 'Strand', group: 'growth',
+    note: 'An open seed has two ends, so it meanders instead of closing into a blob. With no inside to fill, only the edge is drawn.',
     cfg: { seeds: [seed('line')], initialNodes: 12, minEdge: 10, maxEdge: 15,
            repulsionRadius: 70, repulsionFactor: 6, alignmentFactor: 1.2,
-           noiseFactor: 0.15, maxNodes: 2600,
-           fillOn: false, bg: '#f7f4ec', stroke: '#1a1a1a', strokeWidth: 1.6 },
+           noiseFactor: 0.15, maxNodes: 2600, fillOn: false, strokeWidth: 2.4 },
   },
   {
-    name: 'Twins',
+    name: 'Twins', group: 'growth',
     note: 'Two seeds grow as separate curves. They never join, but they push on each other and meet along a seam.',
     cfg: { seeds: [seed('circle', -250), seed('circle', 250)], startRadius: 80,
-           repulsionRadius: 80, maxNodes: 2600, strokeOn: false, fill: '#111111' },
+           repulsionRadius: 80, maxNodes: 2600 },
   },
   {
-    name: 'Corral',
-    note: 'A drawn boundary pens the growth in and two obstacles stand in its way. The wall pushes back like a line of nodes, so the curve keeps its distance.',
+    name: 'Corral', group: 'growth',
+    note: 'A drawn boundary pens the growth in and two obstacles stand in its way. The walls push back like a line of nodes, so the curve keeps its distance, and the run ends when the boundary is full.',
     cfg: { seeds: [seed('circle')], startRadius: 55, repulsionRadius: 46,
            wallRepulsion: 0.6, boundary: ring(0, 0, 330, 64, 0.18),
            obstacles: [ring(150, -70, 72, 28, 0), ring(-150, 90, 60, 24, 0)],
-           maxNodes: 2600 },
+           maxNodes: 2600, showConstraints: true },
   },
+
+  /* ---- applications: the drawing matters as much as the form ---- */
+
   {
-    name: 'Graphite',
-    note: 'The pencil style: the same outline drawn as hundreds of short strokes, each taking its own length, width and opacity from a range.',
+    name: 'Graphite', group: 'creative',
+    note: 'The pencil style: the outline drawn as hundreds of short strokes, each taking its own length, width and opacity from a range.',
     cfg: { seeds: [seed('circle')], maxNodes: 1600,
            style: 'pencil', fillOn: false, bg: '#f2efe9', stroke: '#2b2b33',
            strokeWidth: 2.2, skOpMin: 0.3, skOpMax: 0.85 },
   },
   {
-    name: 'Scribble',
+    name: 'Scribble', group: 'creative',
     note: 'Wide ranges and long strokes that mostly ignore the curve: four passes of loose hatching.',
     cfg: { seeds: [seed('star')], initialNodes: 24, minEdge: 9, maxEdge: 14,
            repulsionRadius: 120, repulsionFactor: 12, attractionFactor: 1.4,
@@ -98,7 +120,7 @@ const PRESET_LIST = [
            skOpMin: 0.12, skOpMax: 0.5 },
   },
   {
-    name: 'Grain',
+    name: 'Grain', group: 'creative',
     note: 'The stipple style: the outline read as dots rather than a line, each taking its own size and opacity, scattered a little off the true edge.',
     cfg: { seeds: [seed('circle')], maxNodes: 1500,
            style: 'stipple', fillOn: false, bg: '#f7f4ec', stroke: '#1a1a1a',
@@ -106,7 +128,7 @@ const PRESET_LIST = [
            stOpMin: 0.3, stOpMax: 0.95 },
   },
   {
-    name: 'Topography',
+    name: 'Topography', group: 'creative',
     note: 'The contour style: the outline echoed outward and inward in fading steps, so the form reads like a map.',
     cfg: { seeds: [seed('circle')], maxNodes: 1300, repulsionRadius: 110,
            style: 'contour', fillOn: false, bg: '#f4f2ec', stroke: '#1a3a5c',
@@ -114,42 +136,36 @@ const PRESET_LIST = [
            skValMin: -0.05, skValMax: 0.1 },
   },
   {
-    name: 'Rings',
-    note: 'Stacking: every few steps is kept in the picture instead of being erased, so the whole evolution of the outline is visible at once, like growth rings.',
+    name: 'Rings', group: 'creative',
+    note: 'Stacking, with the oldest layers sinking back: every few steps is left in the picture rather than erased. Auto-fit is off, because the layers only line up if the view holds still.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110,
-           stackEvery: 3, stackFade: 0.35,
+           stackEvery: 3, stackFade: 0.35, follow: false,
            accumulate: true, stampEvery: 3, trailFade: 0.03,
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
   {
-    name: 'Sediment',
-    note: 'Stacking with nothing fading: every layer carries the same weight, so the record thickens evenly and the oldest outline reads as clearly as the newest.',
+    name: 'Sediment', group: 'creative',
+    note: 'The same, with nothing fading: every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
-           stackEvery: 3, stackFade: 1,
+           stackEvery: 3, stackFade: 1, follow: false,
            accumulate: true, stampEvery: 3, trailFade: 0,
            fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
   },
   {
-    name: 'Neon',
-    note: 'Settings dialled in by hand and saved out of the app, used here verbatim: weak attraction against heavy repulsion, damping right down so the curve settles slowly, and a node budget three times the usual.',
-    cfg: { seeds: [seed('circle')], maxSteps: 12000,
-          initialNodes: 10, startRadius: 125, seed: 341,
-          minEdge: 11, maxEdge: 16, repulsionRadius: 99, attractionFactor: 0.52,
-          repulsionFactor: 11.7, alignmentFactor: 1.21, noiseFactor: 0.1, damping: 0.23,
-          smoothing: 0.3, repulsionSkip: 2, wallRepulsion: 1, splitJitter: 1,
-          pruneShort: false, maxNodes: 8600, boundary: null, obstacles: [], drawnShapes: [],
-          style: 'smooth', tension: 0.33, strokeWidth: 1.8, fillOn: true, strokeOn: true,
-          showNodes: false, bg: '#07070c', fill: '#414349', stroke: '#3dffd0', skPasses: 2,
-          skDensity: 8, skLenMin: 16, skLenMax: 62, skBowMin: 0.35, skBowMax: 0.74,
-          skJitMin: 1.2, skJitMax: 4.3, skWidthMin: 0.4, skWidthMax: 1, skOpMin: 0.25,
-          skOpMax: 0.8, skHueMin: -154, skHueMax: 0, skSatMin: -0.43, skSatMax: 0,
-          skValMin: -0.5, skValMax: 0, stSpacing: 7, stSizeMin: 0.6, stSizeMax: 2.6,
-          stScatMin: 0, stScatMax: 2.5, stOpMin: 0.25, stOpMax: 0.9, ctCount: 4, ctGap: 7,
-          ctFade: 0.72 },
+    name: 'Neon', group: 'creative',
+    note: 'The Meander forces on a dark ground in mint, run to a much larger budget. Dialled in by hand in the app and saved out as a settings file, used here verbatim.',
+    cfg: { seeds: [seed('circle')], seed: 341, maxSteps: 12000,
+           repulsionRadius: 99, attractionFactor: 0.52, repulsionFactor: 11.7,
+           alignmentFactor: 1.21, damping: 0.23, maxNodes: 8600, strokeWidth: 1.8,
+           bg: '#07070c', fill: '#414349', stroke: '#3dffd0',
+           skBowMin: 0.35, skBowMax: 0.74, skJitMin: 1.2, skJitMax: 4.3,
+           skLenMin: 16, skLenMax: 62, skWidthMin: 0.4, skWidthMax: 1,
+           skHueMin: -154, skHueMax: 0, skSatMin: -0.43, skSatMax: 0,
+           skValMin: -0.5, skValMax: 0, skDensity: 8 },
   },
   {
-    name: 'Ember',
-    note: 'Every stroke is nudged around the colour wheel and up or down in value, so the line burns unevenly.',
+    name: 'Ember', group: 'creative',
+    note: 'Two concentric rings, and every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly.',
     cfg: { seeds: [seed('ring'), seed('ring', 0, 0, 0, 0.45)], startRadius: 150,
            repulsionRadius: 85, maxNodes: 2200,
            style: 'pencil', fillOn: false, bg: '#140d14', stroke: '#f2542d',
@@ -165,7 +181,7 @@ const PRESET_LIST = [
 const PRESETS = {};
 const PRESET_NOTES = {};
 for (const p of PRESET_LIST){
-  PRESETS[p.name] = Object.assign({}, BASE, p.cfg);
+  PRESETS[p.name] = Object.assign({}, BASE, { group: p.group }, p.cfg);
   PRESET_NOTES[p.name] = p.note;
 }
 
