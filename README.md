@@ -185,8 +185,13 @@ scroll zoom · drag pan · hold `B` (or shift) and drag to push the curve.
 - **Copy node command** writes the `growth.js` invocation for exactly what is on screen
   — seeds with their placement, traced outlines, constraints, style and all its ranges.
 
-View state (pan, zoom) is deliberately not saved: the same settings should reproduce the
-same growth, not the same camera.
+View state is saved only when auto-fit is off, because at that point the framing is a
+choice you made rather than something the app picked. It is stored as the world rectangle
+to frame — centre and radius — so it lands the same whatever size the window is.
+
+The stacking presets rely on this: their layers only line up if the view holds still, so
+they arrive with auto-fit off and framed for the size the shape finishes at, and grow into
+the picture rather than off the edge of it.
 
 ---
 
@@ -245,5 +250,28 @@ Steps are capped below the margin, and a node found on the wrong side is pulled 
 whatever its distance. Zero escapes across boundary-only, boundary-plus-obstacles and
 obstacles-only runs.
 
-The run stops itself, with a reason, on four conditions: node budget, boundary filled,
-growth stalled (nothing split for 150 steps), and numerical instability.
+## When a run stops
+
+Two conditions end a run, and the HUD reports which.
+
+**The node budget** is reached. Splitting edges is the only outlet these forces have, so
+once it is shut off the curve keeps compressing and the outline degrades; the run stops
+there rather than spoiling what it made.
+
+**The shape settles** — it is no longer getting anywhere. Measured as the change in the
+outline's total length over the last hundred steps, as a fraction, shown live in the HUD
+next to the node count, and stopped once it stays under **Settle at** for sixty steps.
+
+Length over a window, rather than movement between two frames, because neither simpler
+measure works. Raw movement says nothing: a heavily damped run creeps at a hundredth the
+speed of a lively one while growing perfectly well, so any threshold on speed calls it
+finished immediately. Per-step length change says nothing either: a slow configuration
+adds a ten-thousandth of its length per step while filling, which is indistinguishable
+from zero. Over a hundred steps the difference between creeping and finished is plain —
+Corral settles at 0.0001 once its boundary is full, while Meander is still reading 0.07
+after fifteen hundred steps and is left to carry on.
+
+An unbounded form never settles, since it can always spread further; those end at the
+budget. A walled one ends when it has filled its walls.
+
+Numerical instability also halts a run, though that is a fault rather than a finish.

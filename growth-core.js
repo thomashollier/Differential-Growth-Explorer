@@ -152,6 +152,10 @@ class Growth {
     this.applyBarriers();
     this.steps = 0;
     this.lastGrowth = 0;
+    this.motion = 1;                 // "still moving" until measured otherwise
+    this.change = 1;                 // and still changing shape
+    this.lenRing = new Float64Array(120);
+    this.lenAt = 0;
     this.saturated = false;
     this.unstable = false;
   }
@@ -405,14 +409,23 @@ class Growth {
     const wall = this.boundary || this.obstacles.length;
     const lim = wall ? Math.min(p.maxEdge, this.barMargin * 0.8) : p.maxEdge;
     const lim2 = lim * lim;
+    let travelled = 0;
     for (let i = 0; i < n; i++){
       let dx = vx[i], dy = vy[i];
       const m2 = dx * dx + dy * dy;
       if (!(m2 < 1e12)){ this.unstable = true; dx = dy = 0; }
       else if (m2 > lim2){ const k = lim / Math.sqrt(m2); dx *= k; dy *= k; }
       x[i] += dx; y[i] += dy;
+      travelled += Math.sqrt(dx * dx + dy * dy);
       vx[i] = 0; vy[i] = 0;
     }
+
+    /* How much the outline moved this step, as a fraction of an edge, so the
+       number means the same thing whatever scale the form is at. Smoothed over
+       several steps: a single frame is too noisy to decide anything on, since
+       the noise force alone keeps every node twitching. */
+    const inst = n ? (travelled / n) / Math.max(1e-6, minE) : 0;
+    this.motion = this.steps < 2 ? inst : this.motion * 0.85 + inst * 0.15;
 
     /* --- 4. optional Laplacian smoothing, applied to positions rather than
              through the velocity accumulator. The alignment force shares the
@@ -445,6 +458,31 @@ class Growth {
     this.splitEdges();
     if (p.pruneShort) this.pruneEdges();
     this.applyBarriers();
+
+    /* How much the outline changed, as the relative change in its total length.
+       Raw movement is no good for this: a heavily damped run creeps along at a
+       hundredth the speed of a lively one while still growing perfectly well,
+       so any fixed threshold on speed would call it finished immediately.
+       Length says whether the shape is still getting anywhere. Splitting an
+       edge does not change it, so what it measures is the outline spreading. */
+    let len = 0;
+    for (const rg of this.ranges){
+      const last = rg.closed ? rg.e : rg.e - 1;
+      for (let i = rg.s; i < last; i++){
+        const j = (i + 1 < rg.e) ? i + 1 : rg.s;
+        len += Math.hypot(this.x[j] - this.x[i], this.y[j] - this.y[i]);
+      }
+    }
+    /* Measured over a window rather than a single step: a slow configuration
+       adds a ten-thousandth of its length per step while filling perfectly
+       well, which is indistinguishable from nothing. Over a hundred steps the
+       difference between creeping and finished is plain. */
+    const W = this.lenRing.length;
+    const old = this.lenRing[this.lenAt];
+    this.lenRing[this.lenAt] = len;
+    this.lenAt = (this.lenAt + 1) % W;
+    this.change = (this.steps >= W && old > 0) ? Math.abs(len - old) / len : 1;
+
     this.steps++;
   }
 

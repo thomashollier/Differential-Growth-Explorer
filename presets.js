@@ -42,7 +42,8 @@ const BASE = {
   boundary: null, obstacles: [], drawnShapes: [],
   style: 'smooth', tension: 0.33, strokeWidth: 2,
   fillOn: true, strokeOn: true, showNodes: false, showConstraints: false,
-  follow: true, accumulate: false, trailFade: 0, stampEvery: 4,
+  follow: true, accumulate: false, trailFade: 0, stampEvery: 4, frame: null,
+  settleAt: 0.001,
   bg: '#ffffff', fill: '#000000', stroke: '#ff0000',
   skPasses: 2, skDensity: 9,
   skLenMin: 16, skLenMax: 54, skBowMin: 0.2, skBowMax: 0.5,
@@ -140,6 +141,9 @@ const PRESET_LIST = [
     note: 'Stacking, with the oldest layers sinking back: every few steps is left in the picture rather than erased. Auto-fit is off, because the layers only line up if the view holds still.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110,
            stackEvery: 3, stackFade: 0.35, follow: false,
+           // framed for the size it finishes at, so it grows into the picture
+           // rather than off the edge of it
+           frame: { cx: -46, cy: 7, r: 906 },
            accumulate: true, stampEvery: 3, trailFade: 0.03,
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
@@ -148,6 +152,7 @@ const PRESET_LIST = [
     note: 'The same, with nothing fading: every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
            stackEvery: 3, stackFade: 1, follow: false,
+           frame: { cx: 2.5, cy: 6, r: 894 },
            accumulate: true, stampEvery: 3, trailFade: 0,
            fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
   },

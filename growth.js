@@ -38,6 +38,7 @@ const FLAGS = {
   'split-jitter':      ['splitJitter', 'num', 1],
   'max-nodes':         ['maxNodes', 'int', 4000],
   'prune-short':       ['pruneShort', 'bool', false],
+  'settle-at':         ['settleAt', 'num', 0.001],
   'tension':           ['tension', 'num', 0.33],
   'style':             ['style', 'str', 'smooth'],
   'sketch-passes':     ['skPasses', 'int', 2],
@@ -93,6 +94,9 @@ Seed
   --seed-open-path "x,y ..." a traced open strand
 
 Growth
+  --settle-at N          stop once the outline stops getting anywhere: how much
+                         its length changed over the last hundred steps, as a
+                         fraction. 0 never stops for this
   --min-edge N           attraction pulls until edges reach this
   --max-edge N           longer edges split in two
   --repulsion-radius N   sets the gap between folds
@@ -271,13 +275,15 @@ function main(){
   say(`seeded ${sim.ranges.length} curve(s) with ${sim.n} nodes`);
 
   // the same three stop conditions the interactive version uses
-  let stop = 'step limit';
+  let stop = 'step limit', settleRun = 0;
   for (let i = 0; i < O.steps; i++){
     sim.step(null);
     if (sim.unstable){ stop = 'went unstable — soften the forces'; break; }
     if (sim.saturated){ stop = 'node budget reached'; break; }
-    if (sim.steps - sim.lastGrowth > 150){
-      stop = P.boundary ? 'growth filled the boundary' : 'growth stalled';
+    settleRun = (P.settleAt > 0 && sim.change < P.settleAt) ? settleRun + 1 : 0;
+    if (settleRun >= 60){
+      stop = P.boundary ? 'growth filled the boundary'
+           : (sim.n < 200 ? 'growth stalled' : 'shape settled');
       break;
     }
     if (!O.quiet && i % 20 === 0) say(`  step ${i}, ${sim.n} nodes`);

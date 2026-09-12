@@ -283,6 +283,7 @@
     <div id="hud">
       <span>nodes <b id="hNodes">0</b></span>
       <span>steps <b id="hSteps">0</b></span>
+      <span>change <b id="hChange">—</b></span>
       <span>fps <b id="hFps">0</b></span>
     </div>
     <div id="note">
@@ -321,7 +322,7 @@ const P = {
   minEdge:11, maxEdge:16, repulsionRadius:100,
   attractionFactor:1, repulsionFactor:8, alignmentFactor:1,
   noiseFactor:0.1, damping:0.6, wallRepulsion:1, repulsionSkip:2, splitJitter:1, pauseAtBudget:true, smoothing:0.3,
-  maxNodes:4000, stepsPerFrame:1, pruneShort:false,
+  maxNodes:4000, stepsPerFrame:1, pruneShort:false, settleAt:0.001, frame:null,
   seed:10, seeds:[{key:'circle',dx:0,dy:0,rot:0,scale:1}], drawnShapes:[], boundary:null, obstacles:[],
   style:'smooth', tension:0.33, strokeWidth:2, fillOn:true, strokeOn:true,
   accumulate:false, trailFade:0, stampEvery:4,
@@ -364,6 +365,8 @@ const CONTROLS = {
   sim: [
     {k:'stepsPerFrame',  lbl:'Speed',         min:0.1, max:12,    step:0.1, hint:'steps per frame — below 1 the growth is slowed so you can watch it'},
     {k:'maxNodes',       lbl:'Node budget',   min:200, max:20000, step:100, hint:'growth stops here to keep the frame rate up'},
+    {k:'settleAt',       lbl:'Settle at',     min:0, max:0.01, step:0.0002,
+     hint:'stop once the outline stops getting anywhere: how much its length changed over the last hundred steps, as a fraction. 0 never stops for this. The HUD shows the live figure'},
     {k:'splitJitter',    lbl:'Split jitter',  min:0,   max:4,     step:0.1, hint:'random offset given to each new node'},
   ],
   render: [
@@ -419,7 +422,7 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const sim = new Growth(P);
 const view = { scale:1, ox:0, oy:0 };
-let running = true, dpr = 1, budgetAck = false, stepCredit = 0;
+let running = true, dpr = 1, budgetAck = false, stepCredit = 0, settleRun = 0;
 /* An open path has no inside, and filling one just closes it across the ends
    into a blob. Switching to an open seed therefore drops the fill, and
    switching back to a closed one restores it — but only if we were the ones
@@ -732,7 +735,8 @@ presetSel.onchange = () => {
   renderConstraints();
   setFollow(!!P.follow);
   syncAll();
-  restart({ play:true });
+  restart({ play:true, refit:!P.frame });
+  if (P.frame && !P.follow){ viewFromFrame(P.frame); clearTrail(); draw(); }
   if (PRESET_NOTES[presetSel.value]) flash(PRESET_NOTES[presetSel.value]);
 };
 registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel.value || ''; });
@@ -933,6 +937,24 @@ function resize(){
   draw();
 }
 window.addEventListener('resize', resize);
+
+/* The world rectangle a saved view frames, kept as centre and radius so it
+   lands the same whatever size the window is. A stacked picture needs this: its
+   layers only line up if the view holds still, and it has to be framed for the
+   size the shape finishes at, not the seed it starts from. */
+function frameFromView(){
+  const w = cv.width / dpr, h = cv.height / dpr;
+  return { cx: (w / 2 - view.ox) / view.scale,
+           cy: (h / 2 - view.oy) / view.scale,
+           r:  Math.min(w, h) / (2 * view.scale) };
+}
+function viewFromFrame(f){
+  if (!f || !(f.r > 0)) return;
+  const w = cv.width / dpr, h = cv.height / dpr;
+  view.scale = Math.min(w, h) / (2 * f.r);
+  view.ox = w / 2 - f.cx * view.scale;
+  view.oy = h / 2 - f.cy * view.scale;
+}
 
 function fit(silent){
   if (P.accumulate) clearTrail();
@@ -1283,10 +1305,14 @@ function advance(count){
       flash('Node budget reached — growth complete');
       return false;
     }
-    if (sim.steps - sim.lastGrowth > 150 && !sim.saturated){
+    // the outline has stopped getting anywhere. Held for a stretch rather than
+    // taken on one reading, since the figure wanders a little either side
+    settleRun = (P.settleAt > 0 && sim.change < P.settleAt) ? settleRun + 1 : 0;
+    if (settleRun >= 60){
       setRunning(false);
       flash(P.boundary ? 'Growth has filled the boundary'
-                       : 'Growth has stalled — raise repulsion radius or factor, or lower smoothing');
+                       : (sim.n < 200 ? 'Growth stalled — raise repulsion radius or factor'
+                                      : 'Shape has settled — it is no longer growing'));
       return false;
     }
   }
@@ -1294,7 +1320,8 @@ function advance(count){
 }
 
 let fpsT = performance.now(), fpsN = 0;
-const hN = document.getElementById('hNodes'), hS = document.getElementById('hSteps'), hF = document.getElementById('hFps');
+const hN = document.getElementById('hNodes'), hS = document.getElementById('hSteps'),
+      hF = document.getElementById('hFps'), hC = document.getElementById('hChange');
 function frame(){
   if (running){
     stepCredit += P.stepsPerFrame;
@@ -1310,6 +1337,7 @@ function frame(){
     fpsT = now; fpsN = 0;
     hN.textContent = sim.n + (sim.saturated ? ' ·max' : '');
     hS.textContent = sim.steps;
+    hC.textContent = sim.change >= 1 ? '—' : sim.change.toFixed(4);
   }
   requestAnimationFrame(frame);
 }
@@ -1329,6 +1357,7 @@ function restart(opts){
   const refit = (opts && opts.refit !== undefined) ? opts.refit : P.follow;
   budgetAck = false;
   stepCredit = 0;
+  settleRun = 0;
   clearTrail();
   sim.reset();
   setRunning(play);
@@ -1344,7 +1373,7 @@ function setRunning(v){
 }
 btnPlay.onclick = () => {
   // an explicit play past the budget (or past a blow-up) is the user's call
-  if (!running){ budgetAck = sim.saturated; sim.unstable = false; }
+  if (!running){ budgetAck = sim.saturated; sim.unstable = false; settleRun = 0; }
   setRunning(!running);
 };
 document.getElementById('btnStep').onclick  = () => { setRunning(false); sim.step(null); if (P.follow) fit(true); draw(); hN.textContent = sim.n; hS.textContent = sim.steps; };
@@ -1487,6 +1516,7 @@ function nodeCommand(){
     `--repulsion-skip ${P.repulsionSkip}`,
     `--split-jitter ${P.splitJitter}`,
     `--max-nodes ${P.maxNodes}`,
+    `--settle-at ${P.settleAt}`,
     `--style ${P.style}`,
     `--tension ${P.tension}`,
     `--fill ${P.fillOn ? P.fill : 'none'}`,
@@ -1648,12 +1678,15 @@ function writeStore(obj){
 function currentSettings(){
   const o = {};
   for (const k of SAVED_KEYS) o[k] = P[k];
+  // with auto-fit off the view is a choice, so it travels with the settings
+  o.frame = P.follow ? null : frameFromView();
   return o;
 }
 function applySettings(o){
   for (const k of SAVED_KEYS) if (k in o) P[k] = o[k];
   migrateDrawn(o);
   migrateSketch(o);
+  if (P.frame && !P.follow) viewFromFrame(P.frame);
   lastOpenKind = isOpenShape();
   fillAutoOff = false;
   const sel = document.getElementById('theme');

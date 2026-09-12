@@ -29,14 +29,16 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   // heavily damped settings need far more steps to fill, so a preset may ask
   // for more than the usual allowance
   const cap = P.maxSteps || 4000;
-  let steps = 0, stop = 'step limit';
+  let steps = 0, stop = 'step limit', settleRun = 0;
   for (; steps < cap; steps++){
     sim.step(null);
     if (P.stackEvery && steps % P.stackEvery === 0) layers.push(sim.steps);
     if (sim.unstable){ stop = 'unstable'; break; }
     if (sim.saturated){ stop = 'node budget'; break; }
-    if (sim.steps - sim.lastGrowth > 150){
-      stop = P.boundary ? 'filled the boundary' : 'stalled';
+    settleRun = (P.settleAt > 0 && sim.change < P.settleAt) ? settleRun + 1 : 0;
+    if (settleRun >= 60){
+      stop = P.boundary ? 'filled the boundary'
+           : (sim.n < 200 ? 'stalled' : 'settled');
       break;
     }
   }
