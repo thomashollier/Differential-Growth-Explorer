@@ -26,8 +26,11 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   // A preset with stackEvery keeps every so-many-th frame in the picture, the
   // way the app's stacking mode does: each layer is drawn and none erased.
   const layers = [];
+  // heavily damped settings need far more steps to fill, so a preset may ask
+  // for more than the usual allowance
+  const cap = P.maxSteps || 4000;
   let steps = 0, stop = 'step limit';
-  for (; steps < 4000; steps++){
+  for (; steps < cap; steps++){
     sim.step(null);
     if (P.stackEvery && steps % P.stackEvery === 0) layers.push(sim.steps);
     if (sim.unstable){ stop = 'unstable'; break; }
@@ -64,7 +67,11 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   }
   style.render(sink, sim, P, unit);
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" `
+  // the page takes the shape of what grew, so a wide form is not letterboxed
+  const outW = Math.round(w >= h ? SIZE : SIZE * (w / h));
+  const outH = Math.round(h >= w ? SIZE : SIZE * (h / w));
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${outW}" height="${outH}" `
     + `viewBox="${f(x0)} ${f(y0)} ${f(w)} ${f(h)}">
 <rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}" fill="${P.bg}"/>
 ${sink.toString()}

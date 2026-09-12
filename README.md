@@ -9,7 +9,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the twelve examples below, as complete configurations |
+| `presets.js` | the thirteen examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -18,7 +18,7 @@ of step.
 
 ---
 
-## The twelve presets
+## The thirteen presets
 
 Each is a complete configuration — seeds, forces, constraints and drawing — and each is
 in the Presets menu. The pictures were rendered from those same definitions by
@@ -29,6 +29,7 @@ in the Presets menu. The pictures were rendered from those same definitions by
 | | |
 |---|---|
 | ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The original script's look: black fill, red outline. Everything below is a departure from this. |
+| ![Neon](examples/neon.png) | **Neon** — dialled in by hand in the app and saved out as a settings file, used here verbatim. Weak attraction against heavy repulsion with the damping right down, so the curve settles slowly and wanders instead of packing radially: a labyrinth rather than a disc. |
 | ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, and stopped early. Fat arms with room between them instead of a filled disc. Same algorithm, four different numbers. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed. With two loose ends instead of a ring it meanders rather than closing into a blob, and the fill turns itself off, since filling an open path just closes it across the ends. |
 
