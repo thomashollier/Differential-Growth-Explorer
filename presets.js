@@ -92,8 +92,8 @@ const PRESET_LIST = [
   },
   {
     name: 'Twins', group: 'growth',
-    note: 'Two seeds grow as separate curves. They never join, but they push on each other and meet along a seam.',
-    cfg: { seeds: [seed('circle', -250), seed('circle', 250)], startRadius: 80,
+    note: 'A circle and a square twice its size, set well apart. They grow as separate curves that never join, but each pushes the other back where they meet.',
+    cfg: { seeds: [seed('circle', -250), seed('square', 750, 0, 0, 2)], startRadius: 80,
            repulsionRadius: 80, maxNodes: 2600 },
   },
   {
@@ -166,6 +166,10 @@ const PRESET_LIST = [
     name: 'Neon', group: 'creative',
     note: 'The Meander forces on a dark ground in mint, run to a much larger budget. Dialled in by hand in the app and saved out as a settings file, used here verbatim.',
     cfg: { seeds: [seed('circle')], seed: 341, maxSteps: 12000,
+           // the same slow forces as Meander, with three times the budget: at
+           // one step a frame it is two and a half minutes of watching
+           stepsPerFrame: 8,
+           follow: false, frame: { cx: 29, cy: -506, rx: 4003, ry: 1958 },
            repulsionRadius: 99, attractionFactor: 0.52, repulsionFactor: 11.7,
            alignmentFactor: 1.21, damping: 0.23, maxNodes: 8600, strokeWidth: 1.8,
            bg: '#07070c', fill: '#414349', stroke: '#3dffd0',

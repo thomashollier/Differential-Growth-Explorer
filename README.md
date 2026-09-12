@@ -34,7 +34,7 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, stopped early. Fat arms with room between them instead of a filled disc. |
 | ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. It runs at five steps a frame, since at one it barely moves, and holds a still frame sized for where it ends up: it spreads nearly three times as wide as it is tall. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
-| ![Twins](examples/twins.png) | **Twins** — two seeds grow as separate curves. They never join, but they push on each other and meet along a seam. |
+| ![Twins](examples/twins.png) | **Twins** — a circle and a square twice its size, set well apart. They grow as separate curves that never join, but each pushes the other back where they meet. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications
@@ -49,7 +49,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Topography](examples/topography.png) | **Topography** — the contour style: the outline echoed outward and inward in fading steps, so the form reads like a map. |
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
-| ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a much larger budget. Dialled in by hand in the app and saved out as a settings file, used verbatim. |
+| ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a budget three times larger. Eight steps a frame and a still frame of its own, for the same reasons Meander needs them. Dialled in by hand in the app and saved out as a settings file. |
 | ![Ember](examples/ember.png) | **Ember** — two concentric rings, every stroke nudged around the colour wheel and up or down in value, so the line burns unevenly. |
 
 The pictures are rendered from those definitions by `node make-examples.js`.
@@ -190,9 +190,9 @@ choice you made rather than something the app picked. It is stored as the world 
 frame — centre and half-extents — so it lands the same whatever size the window is, and a
 form wider than it is tall is framed on both counts rather than left small in the middle.
 
-Three presets rely on this. The two stacking ones must, since their layers only line up if
-the view holds still. Meander does because following it would rescale the window
-constantly as it sprawls. All three arrive framed for the size the shape finishes at, and
+Four presets rely on this. The two stacking ones must, since their layers only line up if
+the view holds still. Meander and Neon do because following them would rescale the window constantly
+as they sprawl. All three arrive framed for the size the shape finishes at, and
 grow into the picture rather than off the edge of it.
 
 ---
