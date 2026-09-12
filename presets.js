@@ -112,9 +112,9 @@ const PRESET_LIST = [
   },
   {
     name: 'Twins', group: 'growth',
-    note: 'A circle and a square twice its size, set well apart. They grow as separate curves that never join, but each pushes the other back where they meet.',
-    cfg: { seeds: [seed('circle', -250), seed('square', 750, 0, 0, 2)], startRadius: 80,
-           repulsionRadius: 80, maxNodes: 2600 },
+    note: 'A circle and a square four times its size, set well apart, both starting from sixteen corner points. They grow as separate curves that never join, but each pushes the other back where they meet, and the smaller one comes off worse.',
+    cfg: { seeds: [seed('circle', -250), seed('square', 750, 0, 0, 4)], startRadius: 80,
+           initialNodes: 16, repulsionRadius: 80, maxNodes: 2600 },
   },
   {
     name: 'Tracings', group: 'growth',
