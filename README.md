@@ -286,7 +286,17 @@ the **Style** menu on its header so it is reachable while the section is folded.
   4 they separate into distinct ribbons, at 8 the form is a sparse burst of fibre. Which
   threads are kept is decided at birth and never changes, so none of them flickers; the
   ones left out still grow and still push on their neighbours, they are simply not drawn.
-  It is also the lever for export size, since the segment count is nodes × steps. Switching to it restarts the run, because the record
+  It is also the lever for export size, since the segment count is nodes × steps.
+
+  **Thread choice** decides *which* threads those are, and the two answers give different
+  pictures rather than different densities of the same one. *Scattered* keeps every nth
+  node ever born; since only one parent in n is itself drawn, most threads fork off one
+  that is not, and the result reads as a comb of separate fibres. *Tree* starts from evenly
+  spaced nodes on the seed and lets a new thread fork only off a thread already being
+  drawn, so the picture is one connected branching structure — trunks running out from the
+  centre, forking, ending in fans. It is also far sparser at the same setting: at 1 in 4,
+  scattered keeps a quarter of the nodes and tree keeps about three per cent, because a
+  thread has to be descended from a drawn one to be recruited at all. Switching to it restarts the run, because the record
   has to be kept from the first step. Growth has to run *past* its budget for this to have
   anything to draw: all the interest is in what the nodes do once they have stopped being
   created.

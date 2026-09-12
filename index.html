@@ -330,7 +330,7 @@ const P = {
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
   stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5, stScatPow:5,
-  lnGain:0.4, lnKeep:1,
+  lnGain:0.4, lnKeep:1, lnMode:'sample',
   stOpMin:0.25, stOpMax:0.9,
   ctCount:4, ctGap:7, ctFade:0.72,
   bg:'#ffffff', fill:'#000000', stroke:'#ff0000', showNodes:false, showConstraints:true, follow:true
@@ -826,10 +826,14 @@ registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel
 
   // the selected style's own settings, shown only while it is selected
   const styleHead = divider('Style');
-  styleHead.dataset.style = 'pencil,stipple,contour';
+  styleHead.dataset.style = 'pencil,stipple,contour,lineage';
   host.appendChild(styleHead);
   CONTROLS.render.filter(d => d.style)
     .forEach(d => host.appendChild(d.kMin ? rangeRow(d) : slider(d)));
+  host.appendChild(choice({
+    k:'lnMode', lbl:'Thread choice', style:'lineage', restart:true,
+    options:[['sample','Scattered'],['descent','Tree']],
+    hint:'Scattered keeps every nth node ever born, so most threads fork off a parent that is not itself drawn. Tree starts from evenly spaced nodes on the seed and lets a new thread fork only off one already being drawn, so the picture is a single connected branching structure \u2014 and a far sparser one'}));
 })();
 
 /* A two-handled slider. Returns the row; the caller supplies the two keys it
@@ -905,6 +909,22 @@ function divider(label){
   d.className = 'divider';
   d.textContent = label;
   return d;
+}
+
+/* A row of the same shape as a slider, but a menu: for a control that picks
+   between kinds rather than moving along a scale. */
+function choice(def){
+  const wrap = document.createElement('div');
+  wrap.className = 'row';
+  wrap.innerHTML = `<b>${def.lbl}</b><select></select><i></i>`;
+  const sel = wrap.querySelector('select');
+  for (const [v, label] of def.options) sel.add(new Option(label, v));
+  if (def.hint) wrap.title = def.hint;
+  const sync = () => { sel.value = P[def.k]; };
+  sel.onchange = () => { P[def.k] = sel.value; if (def.restart) restart({ play:true }); else draw(); };
+  if (def.style) wrap.dataset.style = def.style;
+  sync(); registry.push(sync);
+  return wrap;
 }
 
 function checkbox(key, label, hint){

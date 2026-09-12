@@ -111,6 +111,14 @@ class Growth {
     this.nid = new Int32Array(this.cap);
     this.bnid = new Int32Array(this.cap);
     this.nextId = 0;
+    /* Descent mode marks a node drawn or not at birth instead of deriving it
+       from the id, so that a new thread can only fork off one that is itself
+       drawn. That makes the picture a single connected tree rooted in the seed,
+       where sampling by id scatters the kept threads and most of them sprout
+       from a parent that was never drawn. */
+    this.drw = new Uint8Array(this.cap);
+    this.bdrw = new Uint8Array(this.cap);
+    this.recruit = 0;
     this.moves = [];                       // x0,y0,x1,y1 … since last consumed
     this.ranges = [];
     this.n = 0;
@@ -136,6 +144,8 @@ class Growth {
     this.bpx = new Float64Array(c); this.bpy = new Float64Array(c);
     const ni = new Int32Array(c); ni.set(this.nid.subarray(0, this.n)); this.nid = ni;
     this.bnid = new Int32Array(c);
+    const dw = new Uint8Array(c); dw.set(this.drw.subarray(0, this.n)); this.drw = dw;
+    this.bdrw = new Uint8Array(c);
     this.cap = c;
   }
 
@@ -184,7 +194,12 @@ class Growth {
     if (this.tracking){
       this.px.set(this.x.subarray(0, this.n));
       this.py.set(this.y.subarray(0, this.n));
-      for (let i = 0; i < this.n; i++) this.nid[i] = this.nextId++;
+      const keep0 = Math.max(1, Math.round(p.lnKeep === undefined ? 1 : p.lnKeep));
+      this.recruit = 0;
+      for (let i = 0; i < this.n; i++){
+        this.nid[i] = this.nextId++;
+        this.drw[i] = (i % keep0 === 0) ? 1 : 0;
+      }
     }
 
     this.steps = 0;
@@ -524,9 +539,11 @@ class Growth {
          parent's and a stale one would draw its branch from where that parent
          stood some hundreds of steps ago. */
       const keep = Math.max(1, Math.round(p.lnKeep === undefined ? 1 : p.lnKeep));
-      const ids = this.nid;
+      const tree = p.lnMode === 'descent';
+      const ids = this.nid, dw = this.drw;
       for (let i = 0; i < this.n; i++){
-        if (keep === 1 || ids[i] % keep === 0) mv.push(PX[i], PY[i], X[i], Y[i]);
+        const on = keep === 1 ? true : (tree ? dw[i] === 1 : ids[i] % keep === 0);
+        if (on) mv.push(PX[i], PY[i], X[i], Y[i]);
         PX[i] = X[i]; PY[i] = Y[i];
       }
     }
@@ -601,6 +618,8 @@ class Growth {
     const track = this.tracking;
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const nid = this.nid, bnid = this.bnid;
+    const drw = this.drw, bdrw = this.bdrw;
+    const keep = Math.max(1, Math.round(this.p.lnKeep === undefined ? 1 : this.p.lnKeep));
     const maxE = this.p.maxEdge, maxE2 = maxE * maxE;
     const rnd = this.rnd, jit = this.p.splitJitter;
     const ranges = this.ranges, out = [];
@@ -612,7 +631,8 @@ class Growth {
       const last = rg.closed ? rg.e : rg.e - 1;
       for (let i = rg.s; i < rg.e; i++){
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
+        // the first of the two keeps the identity, and the thread with it
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
         m++;
         if (i < last && m < lim){
           const j = (i + 1 < rg.e) ? i + 1 : rg.s;
@@ -623,7 +643,11 @@ class Growth {
             bvx[m] = 0; bvy[m] = 0; bcid[m] = c;
             // born here, so its thread starts where its left parent stood: that
             // segment is the branch
-            if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = this.nextId++; }
+            if (track){
+              bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = this.nextId++;
+              // a fork off a drawn thread, every keep-th time one splits
+              bdrw[m] = (drw[i] && (++this.recruit % keep === 0)) ? 1 : 0;
+            }
             m++; split = true;
           }
         }
@@ -637,6 +661,7 @@ class Growth {
     if (track){
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
       this.nid = bnid; this.bnid = nid;
+      this.drw = bdrw; this.bdrw = drw;
     }
     this.ranges = out;
     this.n = m;
@@ -654,6 +679,7 @@ class Growth {
     const track = this.tracking;
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
     const nid = this.nid, bnid = this.bnid;
+    const drw = this.drw, bdrw = this.bdrw;
     const ranges = this.ranges, out = [];
     let m = 0, removed = false;
 
@@ -666,7 +692,7 @@ class Growth {
           removed = true; continue;
         }
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
         m++;
       }
       if (rg.closed && m - start > 8 &&
@@ -678,7 +704,7 @@ class Growth {
         m = start;
         for (let i = rg.s; i < rg.e; i++){
           bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
+          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; bdrw[m] = drw[i]; }
           m++;
         }
       }
@@ -691,6 +717,7 @@ class Growth {
     if (track){
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
       this.nid = bnid; this.bnid = nid;
+      this.drw = bdrw; this.bdrw = drw;
     }
     this.ranges = out;
     this.n = m;
@@ -1275,7 +1302,7 @@ const STYLES = {
      system, where the outline styles draw the rim. */
   lineage: {
     label: 'Lineage',
-    params: ['strokeWidth', 'lnGain', 'lnKeep', 'skHue', 'skSat', 'skVal'],
+    params: ['strokeWidth', 'lnGain', 'lnKeep', 'lnMode', 'skHue', 'skSat', 'skVal'],
     needsHistory: true,
     render(sink, sim, P, unit, alpha, variant){
       const mv = sim.moves;
