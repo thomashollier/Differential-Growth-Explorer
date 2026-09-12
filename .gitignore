@@ -8,3 +8,7 @@ __pycache__/
 # the original batch scripts and their renders, kept locally but out of the repo
 DiffGrowth/
 DiffGrowth03/
+
+# settings saved out of the app while working. Once one becomes a preset its
+# values live in presets.js, so the file itself is scratch.
+/*.json
