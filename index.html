@@ -329,7 +329,7 @@ const P = {
   skPasses:2, skDensity:9, skBowMin:0.2, skBowMax:0.5, skJitMin:1.2, skJitMax:3.6,
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
-  stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5,
+  stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5, stScatPow:5,
   stOpMin:0.25, stOpMax:0.9,
   ctCount:4, ctGap:7, ctFade:0.72,
   bg:'#ffffff', fill:'#000000', stroke:'#ff0000', showNodes:false, showConstraints:true, follow:true
@@ -398,6 +398,8 @@ const CONTROLS = {
      hint:'each dot takes a radius from this range'},
     {kMin:'stScatMin', kMax:'stScatMax', lbl:'Scatter', min:0, max:20, step:0.1, style:'stipple',
      hint:'how far off the line a dot may sit, which is what turns an edge into grain'},
+    {k:'stScatPow', lbl:'Scatter power', min:0.1, max:5, step:0.05, style:'stipple',
+     hint:'how the dots are spread across that scatter \u2014 5 spreads them evenly, 1 thins them out steadily with distance from the line, below 1 packs them in tight against it'},
     {kMin:'stOpMin', kMax:'stOpMax', lbl:'Dot opacity', min:0, max:1, step:0.01, style:'stipple'},
     {k:'ctCount', lbl:'Echoes', min:0, max:14, step:1, style:'contour',
      hint:'how many offset copies are drawn either side of the outline'},
@@ -1542,7 +1544,7 @@ function nodeCommand(){
     a.push(`--obstacle-path "${o.map(q => q[0] + ',' + q[1]).join(' ')}"`);
   if (P.style === 'stipple'){
     a.push(`--dot-spacing ${P.stSpacing}`, `--dot-size ${P.stSizeMin},${P.stSizeMax}`,
-           `--dot-scatter ${P.stScatMin},${P.stScatMax}`,
+           `--dot-scatter ${P.stScatMin},${P.stScatMax}`, `--dot-power ${P.stScatPow}`,
            `--dot-opacity ${P.stOpMin},${P.stOpMax}`,
            `--sketch-hue ${P.skHueMin},${P.skHueMax}`,
            `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
@@ -1887,6 +1889,8 @@ function migrateSketch(o){
   if (o.skJitMin === undefined && o.skJitter !== undefined){
     P.skJitMin = P.skJitMax = o.skJitter;
   }
+  // scatter used to be spread evenly, which is what a power of 5 gives
+  if (o.stScatPow === undefined) P.stScatPow = 5;
   if (o.skLenMin !== undefined) return;
   const band = (v, spread, lo, hi) => [Math.max(lo, v * (1 - spread)), Math.min(hi, v * (1 + spread))];
   if (o.skLength !== undefined){

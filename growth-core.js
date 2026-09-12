@@ -1138,7 +1138,7 @@ const STYLES = {
   /* Dots rather than lines: the outline read as a stippled edge. */
   stipple: {
     label: 'Stipple',
-    params: ['stSpacing', 'stSize', 'stScatter', 'stOpacity', 'skHue', 'skSat', 'skVal'],
+    params: ['stSpacing', 'stSize', 'stScatter', 'stScatPow', 'stOpacity', 'skHue', 'skSat', 'skVal'],
     render(sink, sim, P, unit, alpha, variant){
       const A = alpha === undefined ? 1 : alpha;
       if (P.fillOn){
@@ -1157,6 +1157,14 @@ const STYLES = {
       const scLo = P.stScatMin * unit, scHi = Math.max(P.stScatMin, P.stScatMax) * unit;
       const oLo = P.stOpMin, oHi = Math.max(P.stOpMin, P.stOpMax);
 
+      /* How the dots are spread across the scatter band. Density falls off as
+         (1 - d)^k with d the distance from the line as a fraction of the band,
+         and the control is mapped so that k = 1 — a straight linear thinning —
+         lands at 1, and k = 0 — an even spread — lands at 5. Below 1 the
+         exponent climbs and the dots pack in against the line. */
+      const k = Math.max(0, 1.25 / Math.max(0.05, P.stScatPow === undefined ? 5 : P.stScatPow) - 0.25);
+      const invK = 1 / (k + 1);
+
       let budget = 20000;
       for (const rg of sim.ranges){
         const arc = arcTable(sim, rg);
@@ -1171,7 +1179,12 @@ const STYLES = {
           const [bx, by] = arc.at(at + spacing * 0.5);
           let ex = bx - ax, ey = by - ay;
           const el = Math.hypot(ex, ey) || 1;
-          const off = rr(-scHi, scHi) * (scLo > 0 ? 1 : 1);
+          /* One draw carries both the side and the distance, and the distance
+             transform is the identity at k = 0, so an even spread lands on the
+             same dots this did before there was a control for it. */
+          const t = rnd() * 2 - 1;
+          const d = k > 0 ? 1 - Math.pow(1 - Math.abs(t), invK) : Math.abs(t);
+          const off = Math.sign(t) * (scLo + (scHi - scLo) * d);
           const nx = -ey / el * off, ny = ex / el * off;
           const r = rr(rLo, rHi);
 

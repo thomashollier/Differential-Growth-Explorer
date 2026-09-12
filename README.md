@@ -149,7 +149,11 @@ the **Style** menu on its header so it is reachable while the section is folded.
 
 - **Smooth** — the Bézier outline, fill and stroke.
 - **Stipple** — dots along the outline: spacing, size, scatter and opacity, the last
-  three as ranges.
+  three as ranges. **Scatter power** sets how the dots fall across that scatter rather
+  than how wide it is. At 5 they are spread evenly through the band, which is a cloud
+  with no line left in it. At 1 their density thins out in a straight line with distance,
+  so the edge still reads through the haze. Below 1 they pack in tight against the
+  outline and it comes back as a line with a little fuzz on it.
 - **Contour** — the outline echoed outward and inward: how many, how far apart, and how
   fast they fade.
 - **Pencil sketch** — hundreds of short overlapping strokes. **Length**, **Follow

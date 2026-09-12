@@ -56,6 +56,7 @@ const FLAGS = {
   'dot-spacing':       ['stSpacing', 'num', 7],
   'dot-size':          ['stSizeMin:stSizeMax', 'range', [0.6, 2.6]],
   'dot-scatter':       ['stScatMin:stScatMax', 'range', [0, 2.5]],
+  'dot-power':         ['stScatPow', 'num', 5],
   'dot-opacity':       ['stOpMin:stOpMax', 'range', [0.25, 0.9]],
   'echoes':            ['ctCount', 'int', 4],
   'echo-gap':          ['ctGap', 'num', 7],
@@ -121,6 +122,9 @@ Render
   --sketch-bow MIN,MAX     --sketch-wander MIN,MAX
   --sketch-hue MIN,MAX     --sketch-sat MIN,MAX      --sketch-val MIN,MAX
   (stipple) --dot-spacing N --dot-size MIN,MAX --dot-scatter MIN,MAX
+            --dot-power N  how the dots fall across the scatter: 5 spreads them
+                           evenly, 1 thins them out with distance from the line,
+                           below 1 packs them against it
             --dot-opacity MIN,MAX
   (contour) --echoes N --echo-gap N --echo-fade N
 

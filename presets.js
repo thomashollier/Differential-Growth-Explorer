@@ -52,6 +52,7 @@ const BASE = {
   skOpMin: 0.25, skOpMax: 0.8,
   skHueMin: 0, skHueMax: 0, skSatMin: 0, skSatMax: 0, skValMin: 0, skValMax: 0,
   stSpacing: 7, stSizeMin: 0.6, stSizeMax: 2.6, stScatMin: 0, stScatMax: 2.5,
+  stScatPow: 5,
   stOpMin: 0.25, stOpMax: 0.9,
   ctCount: 4, ctGap: 7, ctFade: 0.72,
 };
