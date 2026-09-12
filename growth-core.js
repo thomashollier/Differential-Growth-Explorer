@@ -105,6 +105,12 @@ class Growth {
     this.py = new Float64Array(this.cap);
     this.bpx = new Float64Array(this.cap);
     this.bpy = new Float64Array(this.cap);
+    /* Thinning the threads has to pick the same ones every step or they flicker
+       in and out as splitting shifts the indices around them, so each node
+       carries an id that never changes once it is born. */
+    this.nid = new Int32Array(this.cap);
+    this.bnid = new Int32Array(this.cap);
+    this.nextId = 0;
     this.moves = [];                       // x0,y0,x1,y1 … since last consumed
     this.ranges = [];
     this.n = 0;
@@ -128,6 +134,8 @@ class Growth {
     this.bcid = new Int32Array(c);
     this.px = cp(this.px); this.py = cp(this.py);
     this.bpx = new Float64Array(c); this.bpy = new Float64Array(c);
+    const ni = new Int32Array(c); ni.set(this.nid.subarray(0, this.n)); this.nid = ni;
+    this.bnid = new Int32Array(c);
     this.cap = c;
   }
 
@@ -172,9 +180,11 @@ class Growth {
     // every thread starts where its node stands on the finished seed outline
     // a history style needs the shadow kept; nothing else pays for it
     this.tracking = !!(p.trackLineage || (STYLES[p.style] && STYLES[p.style].needsHistory));
+    this.nextId = 0;
     if (this.tracking){
       this.px.set(this.x.subarray(0, this.n));
       this.py.set(this.y.subarray(0, this.n));
+      for (let i = 0; i < this.n; i++) this.nid[i] = this.nextId++;
     }
 
     this.steps = 0;
@@ -509,8 +519,14 @@ class Growth {
        empties this; nothing accumulates if nobody is looking. */
     if (this.tracking){
       const mv = this.moves, X = this.x, Y = this.y, PX = this.px, PY = this.py;
+      /* Thinning drops threads from the drawing, never from the record: every
+         shadow still follows its node, because a node born later inherits its
+         parent's and a stale one would draw its branch from where that parent
+         stood some hundreds of steps ago. */
+      const keep = Math.max(1, Math.round(p.lnKeep === undefined ? 1 : p.lnKeep));
+      const ids = this.nid;
       for (let i = 0; i < this.n; i++){
-        mv.push(PX[i], PY[i], X[i], Y[i]);
+        if (keep === 1 || ids[i] % keep === 0) mv.push(PX[i], PY[i], X[i], Y[i]);
         PX[i] = X[i]; PY[i] = Y[i];
       }
     }
@@ -584,6 +600,7 @@ class Growth {
     const bx = this.bx, by = this.by, bvx = this.bvx, bvy = this.bvy, bcid = this.bcid;
     const track = this.tracking;
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
+    const nid = this.nid, bnid = this.bnid;
     const maxE = this.p.maxEdge, maxE2 = maxE * maxE;
     const rnd = this.rnd, jit = this.p.splitJitter;
     const ranges = this.ranges, out = [];
@@ -595,7 +612,7 @@ class Growth {
       const last = rg.closed ? rg.e : rg.e - 1;
       for (let i = rg.s; i < rg.e; i++){
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
         m++;
         if (i < last && m < lim){
           const j = (i + 1 < rg.e) ? i + 1 : rg.s;
@@ -606,7 +623,7 @@ class Growth {
             bvx[m] = 0; bvy[m] = 0; bcid[m] = c;
             // born here, so its thread starts where its left parent stood: that
             // segment is the branch
-            if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
+            if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = this.nextId++; }
             m++; split = true;
           }
         }
@@ -619,6 +636,7 @@ class Growth {
     this.bx = x; this.by = y; this.bvx = vx; this.bvy = vy; this.bcid = cid;
     if (track){
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
+      this.nid = bnid; this.bnid = nid;
     }
     this.ranges = out;
     this.n = m;
@@ -635,6 +653,7 @@ class Growth {
     const bx = this.bx, by = this.by, bvx = this.bvx, bvy = this.bvy, bcid = this.bcid;
     const track = this.tracking;
     const px = this.px, py = this.py, bpx = this.bpx, bpy = this.bpy;
+    const nid = this.nid, bnid = this.bnid;
     const ranges = this.ranges, out = [];
     let m = 0, removed = false;
 
@@ -647,7 +666,7 @@ class Growth {
           removed = true; continue;
         }
         bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
+        if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
         m++;
       }
       if (rg.closed && m - start > 8 &&
@@ -659,7 +678,7 @@ class Growth {
         m = start;
         for (let i = rg.s; i < rg.e; i++){
           bx[m] = x[i]; by[m] = y[i]; bvx[m] = vx[i]; bvy[m] = vy[i]; bcid[m] = c;
-          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; }
+          if (track){ bpx[m] = px[i]; bpy[m] = py[i]; bnid[m] = nid[i]; }
           m++;
         }
       }
@@ -671,6 +690,7 @@ class Growth {
     this.bx = x; this.by = y; this.bvx = vx; this.bvy = vy; this.bcid = cid;
     if (track){
       this.px = bpx; this.py = bpy; this.bpx = px; this.bpy = py;
+      this.nid = bnid; this.bnid = nid;
     }
     this.ranges = out;
     this.n = m;
@@ -1255,7 +1275,7 @@ const STYLES = {
      system, where the outline styles draw the rim. */
   lineage: {
     label: 'Lineage',
-    params: ['strokeWidth', 'lnGain', 'skHue', 'skSat', 'skVal'],
+    params: ['strokeWidth', 'lnGain', 'lnKeep', 'skHue', 'skSat', 'skVal'],
     needsHistory: true,
     render(sink, sim, P, unit, alpha, variant){
       const mv = sim.moves;

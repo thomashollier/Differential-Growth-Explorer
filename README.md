@@ -281,7 +281,12 @@ the **Style** menu on its header so it is reachable while the section is folded.
   parent stood, so the record forks wherever the curve gained a point. The picture is the
   accumulation, so this style turns stacking on and keeps it on; **Thread weight** sets how
   heavily one step is laid down, and low values are right — the weave comes from hundreds
-  of passes, not from one dark one. Switching to it restarts the run, because the record
+  of passes, not from one dark one. **Draw 1 thread in** thins the weave, and it is the
+  control that changes this style most: at 1 the threads close into solid swept sheets, at
+  4 they separate into distinct ribbons, at 8 the form is a sparse burst of fibre. Which
+  threads are kept is decided at birth and never changes, so none of them flickers; the
+  ones left out still grow and still push on their neighbours, they are simply not drawn.
+  It is also the lever for export size, since the segment count is nodes × steps. Switching to it restarts the run, because the record
   has to be kept from the first step. Growth has to run *past* its budget for this to have
   anything to draw: all the interest is in what the nodes do once they have stopped being
   created.
