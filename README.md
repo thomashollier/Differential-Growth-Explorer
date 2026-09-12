@@ -32,7 +32,7 @@ only thing differing between them is the form, and any walls are left visible.
 |---|---|
 | ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The baseline the rest depart from. |
 | ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, stopped early. Fat arms with room between them instead of a filled disc. |
-| ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. |
+| ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. It runs at five steps a frame, since at one it barely moves, and holds a still frame sized for where it ends up: it spreads nearly three times as wide as it is tall. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
 | ![Twins](examples/twins.png) | **Twins** — two seeds grow as separate curves. They never join, but they push on each other and meet along a seam. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
@@ -186,12 +186,14 @@ scroll zoom · drag pan · hold `B` (or shift) and drag to push the curve.
   — seeds with their placement, traced outlines, constraints, style and all its ranges.
 
 View state is saved only when auto-fit is off, because at that point the framing is a
-choice you made rather than something the app picked. It is stored as the world rectangle
-to frame — centre and radius — so it lands the same whatever size the window is.
+choice you made rather than something the app picked. It is stored as the world rectangle to
+frame — centre and half-extents — so it lands the same whatever size the window is, and a
+form wider than it is tall is framed on both counts rather than left small in the middle.
 
-The stacking presets rely on this: their layers only line up if the view holds still, so
-they arrive with auto-fit off and framed for the size the shape finishes at, and grow into
-the picture rather than off the edge of it.
+Three presets rely on this. The two stacking ones must, since their layers only line up if
+the view holds still. Meander does because following it would rescale the window
+constantly as it sprawls. All three arrive framed for the size the shape finishes at, and
+grow into the picture rather than off the edge of it.
 
 ---
 

@@ -43,6 +43,7 @@ const BASE = {
   style: 'smooth', tension: 0.33, strokeWidth: 2,
   fillOn: true, strokeOn: true, showNodes: false, showConstraints: false,
   follow: true, accumulate: false, trailFade: 0, stampEvery: 4, frame: null,
+  stepsPerFrame: 1,
   settleAt: 0.001,
   bg: '#ffffff', fill: '#000000', stroke: '#ff0000',
   skPasses: 2, skDensity: 9,
@@ -75,7 +76,12 @@ const PRESET_LIST = [
     note: 'Weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially.',
     cfg: { seeds: [seed('circle')], seed: 341, repulsionRadius: 99,
            attractionFactor: 0.52, repulsionFactor: 11.7, alignmentFactor: 1.21,
-           damping: 0.23, maxNodes: 2600, maxSteps: 12000, strokeWidth: 2.6 },
+           damping: 0.23, maxNodes: 2600, maxSteps: 12000, strokeWidth: 2.6,
+           // the damping is low enough that at one step a frame it barely moves
+           stepsPerFrame: 5,
+           // held still and framed for the size it finishes at: it spreads far
+           // wider than it is tall, and following it would keep rescaling
+           follow: false, frame: { cx: -6, cy: -61, rx: 2374, ry: 886 } },
   },
   {
     name: 'Strand', group: 'growth',
@@ -143,7 +149,7 @@ const PRESET_LIST = [
            stackEvery: 3, stackFade: 0.35, follow: false,
            // framed for the size it finishes at, so it grows into the picture
            // rather than off the edge of it
-           frame: { cx: -46, cy: 7, r: 906 },
+           frame: { cx: -46, cy: 7, rx: 887, ry: 906 },
            accumulate: true, stampEvery: 3, trailFade: 0.03,
            fillOn: false, bg: '#fbf9f4', stroke: '#b0332a', strokeWidth: 1 },
   },
@@ -152,7 +158,7 @@ const PRESET_LIST = [
     note: 'The same, with nothing fading: every layer carries the same weight, so the record thickens evenly and the first outline reads as clearly as the last.',
     cfg: { seeds: [seed('circle')], maxNodes: 2400, repulsionRadius: 110, seed: 7,
            stackEvery: 3, stackFade: 1, follow: false,
-           frame: { cx: 2.5, cy: 6, r: 894 },
+           frame: { cx: 3, cy: 6, rx: 884, ry: 894 },
            accumulate: true, stampEvery: 3, trailFade: 0,
            fillOn: false, bg: '#ffffff', stroke: '#c0392b', strokeWidth: 1 },
   },

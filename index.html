@@ -946,12 +946,17 @@ function frameFromView(){
   const w = cv.width / dpr, h = cv.height / dpr;
   return { cx: (w / 2 - view.ox) / view.scale,
            cy: (h / 2 - view.oy) / view.scale,
-           r:  Math.min(w, h) / (2 * view.scale) };
+           rx: (w / 2) / view.scale,
+           ry: (h / 2) / view.scale };
 }
 function viewFromFrame(f){
-  if (!f || !(f.r > 0)) return;
+  if (!f) return;
+  // half-extents, not one radius: a form twice as wide as it is tall has to be
+  // framed on both counts or it lands small in the middle of the window
+  const rx = f.rx > 0 ? f.rx : f.r, ry = f.ry > 0 ? f.ry : f.r;
+  if (!(rx > 0) || !(ry > 0)) return;
   const w = cv.width / dpr, h = cv.height / dpr;
-  view.scale = Math.min(w, h) / (2 * f.r);
+  view.scale = Math.min(w / (2 * rx), h / (2 * ry));
   view.ox = w / 2 - f.cx * view.scale;
   view.oy = h / 2 - f.cy * view.scale;
 }
