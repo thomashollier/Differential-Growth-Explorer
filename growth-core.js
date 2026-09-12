@@ -976,7 +976,16 @@ function arcTable(sim, rg){
 /* A style is handed `unit`: how many world units one output pixel covers. All
    of a style's measurements are in output pixels, so a sketch has the same
    character whatever the zoom or export size, exactly as a pen does not get
-   finer just because the subject is bigger. */
+   finer just because the subject is bigger.
+
+   `alpha` scales everything it draws, for a layer of a stack. `variant` picks
+   which random draw to use: a style keeps its marks in the same places from
+   frame to frame, which is right for a live sketch that would otherwise crawl,
+   but wrong for stacking — identical draws pile up into tracks instead of
+   accumulating into grain, so each stamped layer asks for a different one. */
+function variantSeed(P, salt, variant){
+  return mulberry32(((P.seed >>> 0) + salt + (variant | 0) * 0x9e3779b1) >>> 0);
+}
 /* Draws a colour a step off the base, within the hue/saturation/value ranges.
    Shared by every style that wants its marks to vary. */
 function inkFrom(P, baseHsv, rr){
@@ -1039,8 +1048,9 @@ const STYLES = {
     label: 'Pencil sketch',
     params: ['skPasses', 'skDensity', 'skLength', 'skBow', 'skWander',
              'skWidth', 'skOpacity', 'skHue', 'skSat', 'skVal'],
-    render(sink, sim, P, unit){
+    render(sink, sim, P, unit, alpha, variant){
       const lw = P.strokeWidth * unit;
+      const A = alpha === undefined ? 1 : alpha;
       if (P.fillOn){
         sink.begin();
         emitPath(sim, sink, P.tension);
@@ -1048,8 +1058,7 @@ const STYLES = {
       }
       if (!P.strokeOn || P.strokeWidth <= 0) return;
 
-      // Seeded, so the sketch is stable between frames instead of crawling.
-      const rnd = mulberry32((P.seed >>> 0) + 0x9e3779b9);
+      const rnd = variantSeed(P, 0x9e3779b9, variant);
       const rr = (a, b) => a + rnd() * (b - a);
 
       // Length, width and opacity are ranges: each stroke draws its own value
@@ -1119,7 +1128,7 @@ const STYLES = {
           const ink = tinted
             ? hsvToCss(baseH + rr(hLo, hHi), baseS + rr(sLo, sHi), baseV + rr(vLo, vHi))
             : P.stroke;
-          sink.stroke(ink, lw * rr(wLo, wHi), rr(oLo, oHi));
+          sink.stroke(ink, lw * rr(wLo, wHi), rr(oLo, oHi) * A);
         }
       }
       }
@@ -1130,7 +1139,8 @@ const STYLES = {
   stipple: {
     label: 'Stipple',
     params: ['stSpacing', 'stSize', 'stScatter', 'stOpacity', 'skHue', 'skSat', 'skVal'],
-    render(sink, sim, P, unit){
+    render(sink, sim, P, unit, alpha, variant){
+      const A = alpha === undefined ? 1 : alpha;
       if (P.fillOn){
         sink.begin();
         emitPath(sim, sink, P.tension);
@@ -1138,7 +1148,7 @@ const STYLES = {
       }
       if (!P.strokeOn) return;
 
-      const rnd = mulberry32((P.seed >>> 0) + 0x85ebca6b);
+      const rnd = variantSeed(P, 0x85ebca6b, variant);
       const rr = (a, b) => a + rnd() * (b - a);
       const baseHsv = hexToHsv(P.stroke);
 
@@ -1165,7 +1175,7 @@ const STYLES = {
           const nx = -ey / el * off, ny = ex / el * off;
           const r = rr(rLo, rHi);
 
-          sink.dot(px + nx, py + ny, r, inkFrom(P, baseHsv, rr) || P.stroke, rr(oLo, oHi));
+          sink.dot(px + nx, py + ny, r, inkFrom(P, baseHsv, rr) || P.stroke, rr(oLo, oHi) * A);
         }
       }
     },
@@ -1175,7 +1185,8 @@ const STYLES = {
   contour: {
     label: 'Contour',
     params: ['ctCount', 'ctGap', 'ctFade', 'skHue', 'skSat', 'skVal'],
-    render(sink, sim, P, unit){
+    render(sink, sim, P, unit, alpha, variant){
+      const A = alpha === undefined ? 1 : alpha;
       if (P.fillOn){
         sink.begin();
         emitPath(sim, sink, P.tension);
@@ -1183,7 +1194,7 @@ const STYLES = {
       }
       if (!P.strokeOn || P.strokeWidth <= 0) return;
 
-      const rnd = mulberry32((P.seed >>> 0) + 0xc2b2ae35);
+      const rnd = variantSeed(P, 0xc2b2ae35, variant);
       const rr = (a, b) => a + rnd() * (b - a);
       const baseHsv = hexToHsv(P.stroke);
       const lw = P.strokeWidth * unit;
@@ -1194,7 +1205,7 @@ const STYLES = {
       for (let ring = 0; ring <= n; ring++){
         for (const side of (ring === 0 ? [0] : [1, -1])){
           const d = ring * gap * side;
-          const alpha = ring === 0 ? 1 : Math.pow(P.ctFade, ring);
+          const ringAlpha = ring === 0 ? 1 : Math.pow(P.ctFade, ring);
           const ink = inkFrom(P, baseHsv, rr) || P.stroke;
           for (const rg of sim.ranges){
             const count = rg.e - rg.s;
@@ -1205,7 +1216,7 @@ const STYLES = {
               if (i === 0) sink.moveTo(ox, oy); else sink.lineTo(ox, oy);
             }
             if (rg.closed) sink.closePath();
-            sink.stroke(ink, lw, alpha);
+            sink.stroke(ink, lw, ringAlpha * A);
           }
         }
       }

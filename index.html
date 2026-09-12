@@ -1067,7 +1067,7 @@ function toWorld(e){
 }
 
 /* ---------- drawing ---------- */
-function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg){
+function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg, variant){
   c.save();
   if (!skipBg){
     c.fillStyle = P.bg;
@@ -1079,7 +1079,7 @@ function paint(c, scale, ox, oy, w, h, unitWorld, showConstraints, skipBg){
 
   // a style measures in output pixels; this is what one of them is worth here
   const unit = unitWorld !== undefined ? unitWorld : 1 / scale;
-  (STYLES[P.style] || STYLES.smooth).render(canvasSink(c), sim, P, unit);
+  (STYLES[P.style] || STYLES.smooth).render(canvasSink(c), sim, P, unit, 1, variant);
   if (showConstraints){
     const px = 1 / scale;
     if (P.boundary){
@@ -1159,8 +1159,13 @@ function stampTrail(){
     fadeDebt = 0;
   }
 
-  // the frame as it is, laid on top of what is already there
-  paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true);
+  /* The frame as it is, laid on top of what is already there. A style keeps its
+     marks in fixed places from frame to frame so a live sketch does not crawl,
+     but stacking identical draws piles them up into tracks that look like they
+     are following the growth, instead of accumulating into grain. Each stamp
+     therefore asks for a different draw. Keyed on the step count rather than a
+     counter, so a replay of the same run stacks the same way. */
+  paint(t, view.scale, view.ox, view.oy, w, h, undefined, false, true, sim.steps);
   trailStamp = sim.steps;
 }
 

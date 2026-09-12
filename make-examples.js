@@ -63,7 +63,9 @@ for (const [name, cfg] of Object.entries(PRESETS)){
         mark++;
         const fade = P.stackFade === undefined ? 0.55 : P.stackFade;
         const alpha = fade + (1 - fade) * (mark / layers.length);
-        style.render(sink, replay, Object.assign({}, P, { fillOn: false }), unit, alpha);
+        // a different random draw per layer, so stacked marks do not pile up
+        // into tracks the way an identical draw repeated would
+        style.render(sink, replay, Object.assign({}, P, { fillOn: false }), unit, alpha, replay.steps);
       }
     }
   }
