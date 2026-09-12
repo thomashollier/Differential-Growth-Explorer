@@ -79,6 +79,13 @@ const PRESET_LIST = [
            follow: false, frame: { cx: 29, cy: 34, rx: 1424, ry: 851 } },
   },
   {
+    name: 'Pinwheel', group: 'growth',
+    note: 'The Rosette forces from a star instead of a circle, started large so the growth elaborates the outline rather than expanding away from it. The five points do not survive as a silhouette — the rim comes out roughly round — but they survive as organisation: each becomes a domain of arms combed parallel at its own angle, meeting the next along a visible seam. A seed can set the grain of a form long after it has stopped setting its shape.',
+    cfg: { seeds: [seed('star')], seed: 487, initialNodes: 58, startRadius: 600,
+           minEdge: 9, repulsionRadius: 65, maxNodes: 3200,
+           follow: false, frame: { cx: 29, cy: 34, rx: 1424, ry: 851 } },
+  },
+  {
     name: 'Lobes', group: 'growth',
     note: 'A repulsion radius half again as wide, longer edges, and a budget of six hundred: fat arms with room between them instead of a filled disc. It spends the budget in a hundred steps and then takes nearly nine hundred more to settle, pushing the arms apart into an even splay.',
     cfg: { seeds: [seed('circle')], repulsionRadius: 150, repulsionFactor: 9,
