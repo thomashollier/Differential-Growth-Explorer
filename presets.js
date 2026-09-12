@@ -72,9 +72,12 @@ const PRESET_LIST = [
   },
   {
     name: 'Lobes', group: 'growth',
-    note: 'A repulsion radius half again as wide, longer edges, and stopped early: fat arms with room between them instead of a filled disc.',
+    note: 'A repulsion radius half again as wide, longer edges, and a budget of six hundred: fat arms with room between them instead of a filled disc. It spends the budget in a hundred steps and then takes nearly nine hundred more to settle, pushing the arms apart into an even splay.',
     cfg: { seeds: [seed('circle')], repulsionRadius: 150, repulsionFactor: 9,
-           minEdge: 15, maxEdge: 24, maxNodes: 600 },
+           minEdge: 15, maxEdge: 24, maxNodes: 600,
+           // with so few nodes the budget goes almost at once; what shapes this
+           // one is the long relaxation afterwards
+           pauseAtBudget: false },
   },
   {
     name: 'Meander', group: 'growth',

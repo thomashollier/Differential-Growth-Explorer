@@ -33,7 +33,7 @@ only thing differing between them is the form, and any walls are left visible.
 | | |
 |---|---|
 | ![Coral](examples/coral.png) | **Coral** — one circle, left to fill the plane. The baseline the rest depart from. |
-| ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, stopped early. Fat arms with room between them instead of a filled disc. |
+| ![Lobes](examples/lobes.png) | **Lobes** — a repulsion radius half again as wide, longer edges, and a budget of six hundred: fat arms with room between them instead of a filled disc. With the pause off, the budget goes in a hundred steps and the next nine hundred are spent pushing those arms apart into an even splay. |
 | ![Meander](examples/meander.png) | **Meander** — weak attraction against heavy repulsion with the damping right down. The curve settles slowly and wanders into a labyrinth instead of packing radially. It runs at five steps a frame, since at one it barely moves, and holds a still frame sized for where it ends up: it spreads nearly three times as wide as it is tall. |
 | ![Sprawl](examples/sprawl.png) | **Sprawl** — the Meander forces with the budget more than trebled and *Pause when the budget is reached* switched off. Growth still stops at the last node, but the run does not: the curve keeps relaxing into the room it has left and ends only when the settle test says it has stopped moving. It spends the budget at step 8,843 and settles at 11,385, packing the plane far denser than the Meander ever gets. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
