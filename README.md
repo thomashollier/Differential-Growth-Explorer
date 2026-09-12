@@ -38,7 +38,7 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Sprawl](examples/sprawl.png) | **Sprawl** — the Meander forces with the budget more than trebled and *Pause when the budget is reached* switched off. Growth still stops at the last node, but the run does not: the curve keeps relaxing into the room it has left and ends only when the settle test says it has stopped moving. It spends the budget at step 8,843 and settles at 11,385, packing the plane far denser than the Meander ever gets. |
 | ![Strand](examples/strand.png) | **Strand** — an open seed has two ends, so it meanders rather than closing into a blob. With no inside to fill, only the edge is drawn. |
 | ![Twins](examples/twins.png) | **Twins** — a circle and a square twice its size, set well apart. They grow as separate curves that never join, but each pushes the other back where they meet. |
-| ![Tracings](examples/tracings.png) | **Tracings** — two outlines drawn by hand and set side by side. A traced seed keeps the place and size it was drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. |
+| ![Tracings](examples/tracings.png) | **Tracings** — two outlines drawn by hand and set side by side. A traced seed keeps the place and size it was drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. The pause at the budget is off: the ten thousand nodes go in seventy-eight steps, and the five hundred after them are what combs the fringes out and settles the line between the two. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications

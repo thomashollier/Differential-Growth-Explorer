@@ -115,12 +115,14 @@ const PRESET_LIST = [
   },
   {
     name: 'Tracings', group: 'growth',
-    note: 'Two outlines drawn by hand and set side by side. Traced seeds keep the place and size they were drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet.',
+    note: 'Two outlines drawn by hand and set side by side. Traced seeds keep the place and size they were drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. The ten thousand nodes go in seventy-eight steps and it spends another five hundred settling, which is where the pair works out the line between them.',
     cfg: { initialNodes: 10, startRadius: 80, seed: 10, minEdge: 11, maxEdge: 16,
            repulsionRadius: 80, attractionFactor: 1, repulsionFactor: 8, alignmentFactor: 1,
            noiseFactor: 0.1, damping: 0.6, smoothing: 0.3, repulsionSkip: 2,
            wallRepulsion: 1, splitJitter: 1, pruneShort: false, maxNodes: 10000,
-           settleAt: 0.001, stepsPerFrame: 1, follow: false,
+           // the budget goes in seventy-eight steps; the interesting part is the
+           // five hundred after it, while the two settle against each other
+           pauseAtBudget: false, settleAt: 0.001, stepsPerFrame: 1, follow: false,
            frame: { cx: 1747, cy: 368, rx: 4053, ry: 2421 }, style: 'smooth', tension: 0.33,
            strokeWidth: 2, fillOn: true, strokeOn: true, showNodes: false,
            showConstraints: false, accumulate: false, trailFade: 0, stampEvery: 4,
