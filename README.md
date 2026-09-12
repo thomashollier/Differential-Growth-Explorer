@@ -46,7 +46,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Graphite](examples/graphite.png) | **Graphite** — the pencil style: the outline as hundreds of short strokes, each taking its own length, width and opacity from a range. |
 | ![Scribble](examples/scribble.png) | **Scribble** — wide ranges and long strokes that mostly ignore the curve, four passes of loose hatching. |
 | ![Grain](examples/grain.png) | **Grain** — the stipple style at close spacing with the dots thrown well off the line, stacked as it grows: the outline reads as a drifting grain rather than an edge. Dialled in by hand and saved out of the app. |
-| ![Topography](examples/topography.png) | **Topography** — the contour style: the outline echoed outward and inward in fading steps, so the form reads like a map. |
+| ![Topography](examples/topography.png) | **Topography** — the contour style: nine echoes at close spacing, each stepped round the colour wheel, so the form reads as banded ground rather than a line. Dialled in by hand and saved out of the app. |
 | ![Rings](examples/rings.png) | **Rings** — stacking, with the oldest layers sinking back. Auto-fit is off in this one, because the layers only line up if the view holds still. |
 | ![Sediment](examples/sediment.png) | **Sediment** — the same with nothing fading: every layer carries the same weight, so the record thickens evenly. Auto-fit off as well. |
 | ![Neon](examples/neon.png) | **Neon** — the Meander forces on a dark ground in mint, run to a budget three times larger. Eight steps a frame and a still frame of its own, for the same reasons Meander needs them. Dialled in by hand in the app and saved out as a settings file. |
