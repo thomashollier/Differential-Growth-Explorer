@@ -114,7 +114,7 @@ const PRESET_LIST = [
     name: 'Twins', group: 'growth',
     note: 'A circle and a square four times its size, set well apart, both starting from sixteen corner points. They grow as separate curves that never join, but each pushes the other back where they meet, and the smaller one comes off worse.',
     cfg: { seeds: [seed('circle', -250), seed('square', 750, 0, 0, 4)], startRadius: 80,
-           initialNodes: 16, repulsionRadius: 80, maxNodes: 2600 },
+           initialNodes: 16, repulsionRadius: 80, maxNodes: 4000 },
   },
   {
     name: 'Tracings', group: 'growth',
