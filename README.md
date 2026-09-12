@@ -143,10 +143,122 @@ its own. They are never included in an export.
 
 ### Forces
 
-Every force parameter is live — drag a slider mid-growth and the form responds.
-**Repulsion radius** sets the gap between folds, **Min/Max edge** the strand thickness
-and when an edge splits. **Speed** goes below 1 step per frame; growth saturates in about
-50 steps, so at full rate it is over in under a second.
+Every force parameter is live — drag a slider mid-growth and the form responds. What each
+one does to the finished result is below, and the pictures are the argument: one run of
+the same seed to the same 1 600-node budget, one control changed along each strip, every
+panel of a strip drawn at one scale so a control that changes the *size* of the form shows
+that rather than having it normalised away. `node make-sweeps.js` regenerates them.
+
+#### What you start from
+
+![Seed shape](sweeps/seed-shape.png)
+
+A closed seed is forgotten. Circle, ring, star and square are four different shapes and
+they converge on the same form, because the growth runs to five times the radius it
+started at and nothing of the original survives that. The open **line** is the one that
+differs, and not because of its outline — because it has two ends, so it never closes into
+a body and only its edge is drawn.
+
+![Seed size](sweeps/seed-size.png)
+
+Which means the seed is not forgotten because of what it is, but because of how far the
+growth runs past it. The same star started larger keeps more: at radius 125 there is no
+trace of five-fold anything, at 600 the five domains are unmistakable, each with its arms
+combed at its own angle. This is the Rosette and Pinwheel pair above. It also shows a
+large seed filling *inward* — there is empty room inside it, and the curve folds into that
+as readily as it spreads outward, which is the whorl at the centre of the last two panels.
+
+#### How coarse the form is
+
+![Repulsion radius](sweeps/repulsion-radius.png)
+
+**Repulsion radius** is the strongest single control here. It sets how far strands stay
+off each other, so it decides how coarse the form is relative to its own size: measured
+across that strip, the gap between neighbouring strands goes from 39 to 87 units while the
+form itself only grows from 459 to 736. Fewer, fatter folds, not just a bigger picture.
+
+![Max edge](sweeps/max-edge.png)
+
+**Min/Max edge** is how much line each node carries — how long an edge gets before it
+splits, and how short before attraction stops pulling. Raising it scales the whole form
+up at much the same texture: the strand gap and the form radius move together, 46→88 and
+426→927. It is also expensive in steps, because a fresh edge has further to stretch before
+it splits again: the same budget takes 28 steps at 7–10 and 547 at 18–26.
+
+#### The balance of forces
+
+![Repulsion](sweeps/repulsion-factor.png)
+
+**Repulsion factor** is how hard that push is, as distinct from how far it reaches. It
+mostly buys speed — 690 steps to the budget at 3, 28 at 20 — and tightens the form a
+little as it rises, since the curve is being shoved outward faster than attraction can
+draw it in.
+
+![Attraction](sweeps/attraction.png)
+
+**Attraction** pulls each node toward its path neighbours, and only once the edge is
+longer than the minimum. Over its useful range it changes the result least of any force
+here: the four panels differ in arrangement more than in character. What it really governs
+is how taut the line is against everything else pushing it about.
+
+![Alignment](sweeps/alignment.png)
+
+**Alignment** pulls each node toward the midpoint of its two neighbours. Under about 1.5
+it is a mild tidying force and the form barely notices. Past that it dominates — the last
+panel is a different animal, small and prickly, because every node is being dragged onto
+the line between its neighbours faster than the other forces can build a fold.
+
+![Damping](sweeps/damping.png)
+
+**Damping** is the one to know about, for two reasons. It has the largest effect on the
+finished form of anything on this page, and its name is inverted: the value is how much
+velocity *carries over* between steps, so a higher number damps less. At 0.9 the nodes
+move far each step, the budget is gone in 25 steps and the form is small and crowded
+because it never had time to spread. At 0.35 it creeps, takes 1 038 steps, and the extra
+thousand steps of pushing produce something a third again as wide — 717 units against
+527 — and much looser.
+
+#### Finish and detail
+
+![Smoothing](sweeps/smoothing.png)
+
+**Smoothing** is Taubin λ/μ — shrink-free, unlike a plain Laplacian, which would pull the
+whole form in and starve the growth. Up to about 0.5 it cleans up the fold without costing
+anything. Beyond that it fights the growth for control of the line and the form comes back
+tighter and busier.
+
+![Repulsion skip](sweeps/repulsion-skip.png)
+
+**Repulsion skip** ignores that many nodes either side of each node when computing
+repulsion. It exists for speed, and the default of 2 is free at normal edge lengths — but
+it is free only because those neighbours are close compared to the repulsion radius. Skip
+more and you coarsen the fold; skip none and you get the finest, most even folding the
+tool makes, which is the whole of the Warren preset. Shorten the edges and the default
+stops being free, because then the skipped neighbours *are* most of the neighbourhood.
+
+![Noise](sweeps/noise.png)
+
+**Noise** is the honest negative result on this page. Across its whole slider range it
+re-rolls which arrangement you land on and leaves the character of the form alone. Use it
+to get a different picture from the same settings, not a different kind of picture — for
+that, change the random **seed**, which does the same thing more directly.
+
+#### How far it runs
+
+![Node budget](sweeps/node-budget.png)
+
+**Node budget** is the plainest control of the lot: more line, bigger form, same texture.
+It is also the one with a stopping rule attached, and whether you pause at it or run on to
+the settle test is a real difference in the result rather than a difference in patience —
+see [When a run stops](#when-a-run-stops).
+
+**Speed** goes below 1 step per frame if you want to watch a fast configuration work.
+
+Two cliffs are worth knowing about, since either turns the picture into a stalled
+forty-node blob rather than a form. At the default forces, damping below about 0.3 and a
+maximum edge above about 28 both starve the growth: splitting is the only outlet these
+forces have, and both settings stop edges reaching the length that splits them. The run
+ends as *stalled* rather than *settled*, and the node count in the HUD is the tell.
 
 ### Appearance
 

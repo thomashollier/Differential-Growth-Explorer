@@ -12,3 +12,7 @@ DiffGrowth03/
 # settings saved out of the app while working. Once one becomes a preset its
 # values live in presets.js, so the file itself is scratch.
 /*.json
+
+# the sweep figures are documentation, so only the PNGs the README shows are
+# kept; `node make-sweeps.js` regenerates the vector originals
+/sweeps/*.svg
