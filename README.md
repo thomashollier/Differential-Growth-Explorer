@@ -71,11 +71,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 The pictures are rendered from those definitions by `node make-examples.js`, which writes
 `examples/*.svgz` — SVG is XML and has no binary form, so `.svgz` is simply the file
 deflated, which the spec recognises and every renderer here opens without being told.
-`./to-png.sh` turns those into the PNGs shown above, cutting each to a 256-colour palette
-on the way: these are two or three inks over a flat ground with nothing between them but
-antialiasing, so a palette loses nothing visible — magnified three times the worst of them
-is indistinguishable — and takes them to a quarter of the size. Recompressing losslessly
-instead saves about one per cent and is not worth the run. These files are mostly unique
+`./to-png.sh` turns those into the PNGs shown above, at full 24-bit colour. These files are mostly unique
 coordinate digits, poor material for a compressor, so they come down 2–6× rather than the
 5–10× SVG usually gives: 62MB of examples to 16MB.
 
