@@ -326,7 +326,7 @@ const P = {
   shape:'circle', initialNodes:10, startRadius:125,
   minEdge:11, maxEdge:16, repulsionRadius:100,
   attractionFactor:1, repulsionFactor:8, alignmentFactor:1,
-  noiseFactor:0.1, damping:0.6, wallRepulsion:1, repulsionSkip:2, splitJitter:1, pauseAtBudget:true, smoothing:0.3,
+  noiseFactor:0.1, damping:0.6, wallRepulsion:1, repulsionSkip:2, repulsionRamp:0, splitJitter:1, pauseAtBudget:true, smoothing:0.3,
   maxNodes:4000, stepsPerFrame:1, pruneShort:false, settleAt:0.001, frame:null,
   seed:10, seeds:[{key:'circle',dx:0,dy:0,rot:0,scale:1}], drawnShapes:[], boundary:null, obstacles:[],
   style:'smooth', tension:0.33, strokeWidth:2, fillOn:true, strokeOn:true,
@@ -370,6 +370,8 @@ const CONTROLS = {
      hint:'shrink-free low-pass over the outline — removes per-node scalloping. Too much starves the growth'},
     {k:'repulsionSkip',   lbl:'Skip neighbrs', min:0, max:4, step:1,
      hint:'nodes this close along the path do not repel each other. 0 is the original formulation exactly; it is capped automatically when the repulsion radius is too small to spare them'},
+    {k:'repulsionRamp',   lbl:'Fold spacing', min:0, max:24, step:1,
+     hint:'grades the repulsion by how far apart two nodes are along the line, not only in space: nothing at zero, full strength this many nodes apart. A node and its near neighbours barely push, so the line stays free to bend, while a fold meeting another fold pushes at full force and the folds stand off each other. Past about the number of nodes the repulsion radius reaches, the near push that drives growth goes with it and the run stalls'},
     {k:'damping',         lbl:'Damping',     min:0.05, max:0.95, step:0.01},
   ],
   sim: [

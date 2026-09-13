@@ -43,6 +43,7 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Tracings](examples/tracings.png) | **Tracings** — two outlines drawn by hand and set side by side. A traced seed keeps the place and size it was drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. The pause at the budget is off: the ten thousand nodes go in seventy-eight steps, and the five hundred after them are what combs the fringes out and settles the line between the two. |
 | ![Snail](examples/snail.png) | **Snail** — a spiral traced by hand in one open line and grown to twenty thousand nodes. An open strand has two ends and no inside, so rather than filling a body it folds back on itself until it has packed the area out, and the turns of the original spiral still read as bands across the finished sheet. |
 | ![Warren](examples/warren.png) | **Warren** — edges a third the usual length, nothing skipped in the repulsion, and heavy smoothing. Every node feels every neighbour, so the folding is as fine and as even as the tool gets: a round mass packed with passages of one width throughout, with none of the radial arms the coarser settings throw out. The budget goes in thirty-five steps and twelve hundred more go into working the folds even. |
+| ![Whelk](examples/whelk.png) | **Whelk** — the Snail again, the same traced spiral under the same forces, with the repulsion graded by how far apart two nodes are *along the line* rather than only in space. A node and its near neighbours barely push, so the line stays free to bend; a fold meeting another fold pushes at full strength, so the folds stand well off each other. The mean gap between passes goes from 61 to 89 and the sheet opens out. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications
@@ -272,6 +273,16 @@ it is free only because those neighbours are close compared to the repulsion rad
 more and you coarsen the fold; skip none and you get the finest, most even folding the
 tool makes, which is the whole of the Warren preset. Shorten the edges and the default
 stops being free, because then the skipped neighbours *are* most of the neighbourhood.
+
+**Fold spacing** grades that same repulsion by how far apart two nodes are *along the line*
+rather than only in space: nothing at zero separation, full strength at the given number of
+nodes apart. Skip is the blunt version of the idea — ignore everything within N — and this
+is the ramp. A node and its near neighbours barely push, so the line stays free to bend,
+while a fold meeting another fold pushes at full force and the folds stand off each other.
+On the Snail at 12 the mean gap between passes goes from 61 to 89. It has the same cliff as
+skip, and for the same reason: past roughly the number of nodes the repulsion radius reaches
+— about six at the default settings — the near-neighbour push that drives growth goes with
+it, and the run stalls rather than filling. Compare Snail and Whelk above.
 
 ![Noise](sweeps/noise.png)
 

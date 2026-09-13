@@ -474,6 +474,15 @@ class Growth {
     // growing, so the request is capped at what the parameters can afford.
     const skip = Math.max(0, Math.min(p.repulsionSkip | 0,
                                       Math.floor(R / p.maxEdge) - 3));
+    /* Repulsion can be graded by how far apart two nodes are along the path
+       rather than only by how far apart they are in space. Skip is the blunt
+       version of the same idea — ignore everything within N — and this is the
+       ramp: nothing at zero separation, full strength at `ramp` nodes apart,
+       so a fold meeting another fold pushes at full force while a node and its
+       near neighbours barely push at all. The folds stand off each other and
+       the line itself stays free to bend. Off at 0, and it only means anything
+       within one curve. */
+    const ramp = Math.max(0, p.repulsionRamp | 0);
     const NBX = Growth.NBX, NBY = Growth.NBY;
     for (let cy = 0; cy < rows; cy++){
       for (let cx = 0; cx < cols; cx++){
@@ -489,7 +498,8 @@ class Growth {
             const i = items[a], xi = x[i], yi = y[i];
             for (let b = same ? a + 1 : s1; b < e1; b++){
               const j = items[b];
-              if (skip > 0 && cid[i] === cid[j]){
+              let grade = 1;
+              if ((skip > 0 || ramp > 0) && cid[i] === cid[j]){
                 // nodes this close along the path are governed by attraction;
                 // repelling them too is what drives the sawtooth buckling.
                 // "Close along the path" only means anything within one curve.
@@ -498,12 +508,13 @@ class Growth {
                 let di = i - j; if (di < 0) di = -di;
                 if (rg2.closed && di > (len2 >> 1)) di = len2 - di;
                 if (di <= skip) continue;
+                if (ramp > 0 && di < ramp) grade = di / ramp;
               }
               const dx = x[j] - xi, dy = y[j] - yi;
               const d2 = dx * dx + dy * dy;
               if (d2 < R2 && d2 > 0){
                 const d = Math.sqrt(d2);
-                const f = (1 - d * invR) * repF / d;
+                const f = (1 - d * invR) * repF * grade / d;
                 const ax = dx * f, ay = dy * f;
                 fx[i] -= ax; fy[i] -= ay;
                 fx[j] += ax; fy[j] += ay;

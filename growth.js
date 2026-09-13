@@ -34,6 +34,7 @@ const FLAGS = {
   'damping':           ['damping', 'num', 0.6],
   'smoothing':         ['smoothing', 'num', 0.3],
   'wall-repulsion':    ['wallRepulsion', 'num', 1],
+  'repulsion-ramp':    ['repulsionRamp', 'num', 0],
   'repulsion-skip':    ['repulsionSkip', 'int', 2],
   'split-jitter':      ['splitJitter', 'num', 1],
   'max-nodes':         ['maxNodes', 'int', 4000],
@@ -121,6 +122,9 @@ Forces
   --wall-repulsion N     how hard drawn walls push back (x repulsion-factor)
   --noise-factor N       --damping N           --smoothing N
   --repulsion-skip N     --split-jitter N      --prune-short
+  --repulsion-ramp N     grades repulsion by distance along the line: nothing
+                         at zero, full strength this many nodes apart, so folds
+                         stand off each other while the line stays free to bend
 
 Tiling
   --tile MODE            none | grid | spiral | scatter
