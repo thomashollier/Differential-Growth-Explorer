@@ -13,11 +13,25 @@
 set -e
 # rsvg-convert reads .svgz as happily as .svg, so the examples being deflated
 # changes nothing here beyond the glob.
+#
+# Then, if ImageMagick is about, every PNG is cut to a 256-colour palette. These
+# pictures are two or three inks over a flat ground and everything between is
+# antialiasing, so a palette loses nothing you can see -- magnified three times,
+# the worst of them is indistinguishable -- and takes them to a quarter of the
+# size. Recompressing losslessly instead is not worth running: rsvg already
+# writes a tight stream and it saves about one per cent.
+quantise() {
+  command -v magick >/dev/null 2>&1 || return 0
+  magick "$1" -strip -colors 256 -define png:compression-level=9 "$1"
+}
+
 for f in examples/*.svgz; do
   [ -e "$f" ] || continue
   rsvg-convert "$f" -o "${f%.svgz}.png"
+  quantise "${f%.svgz}.png"
 done
 for f in sweeps/*.svg; do
   [ -e "$f" ] || continue
   rsvg-convert "$f" -o "${f%.svg}.png"
+  quantise "${f%.svg}.png"
 done
