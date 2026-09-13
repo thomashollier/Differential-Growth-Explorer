@@ -36,8 +36,15 @@ const seed = (key, dx, dy, rot, scale) =>
 /* Every setting the app carries has to appear here. A preset is the whole
    picture and replaces all of it, so a key missing from BASE is not a default —
    it is whatever the last preset left behind. */
-const { phyllotaxisSeeds, scatterSeeds, mulberry32 } =
-  (typeof require !== 'undefined') ? require('./growth-core.js') : window;
+/* In node this is a module; in the browser growth-core.js has already put its
+   functions on the window as plain declarations. Binding them to new names
+   matters: `const phyllotaxisSeeds = ...` here would redeclare an existing
+   global function and take the whole file down with a SyntaxError, which is
+   silent apart from an empty preset menu. */
+const CORE = (typeof require !== 'undefined') ? require('./growth-core.js') : window;
+const spiralSeeds = CORE.phyllotaxisSeeds;
+const strewnSeeds = CORE.scatterSeeds;
+const prng = CORE.mulberry32;
 
 const BASE = {
   shape: 'circle', seeds: [seed('circle')],
@@ -322,14 +329,14 @@ const PRESET_LIST = [
   {
     name: 'Phyllotaxis', group: 'growth',
     note: 'A hundred and sixty circles laid out on a golden-angle spiral, grown together. Each becomes a lobed cell that presses on its neighbours, and because no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget: run it on and the cells merge into one labyrinth and the arrangement is lost.',
-    cfg: { seeds: phyllotaxisSeeds(160, 125, { hole: 0.3 }), startRadius: 125,
+    cfg: { seeds: spiralSeeds(160, 125, { hole: 0.3 }), startRadius: 125,
            initialNodes: 16, minEdge: 5, maxEdge: 9, repulsionRadius: 26,
            maxNodes: 10000, strokeWidth: 1.2 },
   },
   {
     name: 'Scatter', group: 'growth',
     note: 'Forty-five triangles, squares and circles dropped at random and kept only where they did not touch anything already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture.',
-    cfg: { seeds: scatterSeeds(45, 125, mulberry32(7), { field: 3.4, min: 0.25, max: 0.6 }),
+    cfg: { seeds: strewnSeeds(45, 125, prng(7), { field: 3.4, min: 0.25, max: 0.6 }),
            startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
            repulsionRadius: 26, maxNodes: 6500, strokeWidth: 1.2 },
   },

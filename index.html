@@ -703,6 +703,29 @@ function renderSeeds(){
   box.innerHTML = '';
   const seeds = P.seeds || [];
   if (selSeed >= seeds.length) selSeed = seeds.length - 1;
+
+  /* An arrangement is hundreds of seeds and a pill apiece would bury the rest
+     of the panel. Past a dozen they collapse to one line: the selected seed,
+     still with its transform controls, and a count that clears the lot. Picking
+     a different one is a click on the canvas. */
+  if (seeds.length > 12){
+    const chip = document.createElement('span');
+    chip.className = 'chip saved on';
+    const name = document.createElement('button');
+    name.textContent = seeds.length + ' shapes';
+    name.title = 'A field of seeds. Click one on the canvas to select it';
+    const del = document.createElement('button');
+    del.className = 'x'; del.textContent = '\u00d7'; del.title = 'Remove all of them';
+    del.onclick = () => {
+      P.seeds = []; selSeed = -1;
+      applyShapeDefaults(); syncAll(); restart({ play:false });
+    };
+    chip.appendChild(name); chip.appendChild(del);
+    box.appendChild(chip);
+    renderXform();
+    return;
+  }
+
   seeds.forEach((inst, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip saved' + (i === selSeed ? ' on' : '');
