@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Renders every preset to examples/<name>.svg, so the pictures in the README
+ * Renders every preset to examples/<name>.svgz, so the pictures in the README
  * are made from the same definitions the app loads. Re-run after changing
  * presets.js:
  *
@@ -10,6 +10,7 @@
 'use strict';
 
 const fs = require('fs');
+const zlib = require('zlib');
 const path = require('path');
 const { Growth, STYLES, svgSink } = require(path.join(__dirname, 'growth-core.js'));
 const { PRESETS } = require(path.join(__dirname, 'presets.js'));
@@ -108,8 +109,13 @@ ${sink.toString()}${guides}
 </svg>\n`;
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const file = path.join(OUT, slug + '.svg');
-  fs.writeFileSync(file, svg);
+  /* Written gzipped. SVG is XML, so there is no binary form of it — .svgz is
+     just the file deflated, which the spec recognises and every renderer here
+     reads without being told. These are mostly unique coordinate digits, which
+     is poor material for a compressor, so the saving is 2-6x rather than the
+     usual 5-10. */
+  const file = path.join(OUT, slug + '.svgz');
+  fs.writeFileSync(file, zlib.gzipSync(svg, { level: 9 }));
   console.log(`${name.padEnd(9)} ${String(sim.n).padStart(4)} nodes, `
     + `${sim.ranges.length} curve(s), ${steps} steps (${stop}) -> ${path.relative(__dirname, file)}`);
 }

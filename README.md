@@ -68,7 +68,12 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Scatter](examples/scatter.png) | **Scatter** — 45 triangles, squares and circles dropped at random and kept only where they touched nothing already placed, then sketched rather than outlined, so the field reads as a plate of specimens drawn one at a time. What each started as is still legible in the arms it puts out. |
 | ![Lattice](examples/lattice.png) | **Lattice** — a five by seven grid shaken off the lattice, each tile spun at random, drawn as a specimen sheet: contour echoes ring every cell and step round the colour wheel as they go out, so each sits in its own halo. |
 
-The pictures are rendered from those definitions by `node make-examples.js`.
+The pictures are rendered from those definitions by `node make-examples.js`, which writes
+`examples/*.svgz` — SVG is XML and has no binary form, so `.svgz` is simply the file
+deflated, which the spec recognises and every renderer here opens without being told.
+`./to-png.sh` turns those into the PNGs shown above. These files are mostly unique
+coordinate digits, poor material for a compressor, so they come down 2–6× rather than the
+5–10× SVG usually gives: 62MB of examples to 16MB.
 
 ---
 

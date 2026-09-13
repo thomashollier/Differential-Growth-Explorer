@@ -11,7 +11,13 @@
 # to 0.1px, Scribble's thinnest stroke from 0.6px to 0.31px -- where resampling
 # turns marks into a grey wash. Do not add -w/-h here.
 set -e
-for f in examples/*.svg sweeps/*.svg; do
+# rsvg-convert reads .svgz as happily as .svg, so the examples being deflated
+# changes nothing here beyond the glob.
+for f in examples/*.svgz; do
+  [ -e "$f" ] || continue
+  rsvg-convert "$f" -o "${f%.svgz}.png"
+done
+for f in sweeps/*.svg; do
   [ -e "$f" ] || continue
   rsvg-convert "$f" -o "${f%.svg}.png"
 done

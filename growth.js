@@ -14,6 +14,7 @@
 'use strict';
 
 const fs = require('fs');
+const zlib = require('zlib');
 const path = require('path');
 const { Growth, STYLES, svgSink } = require(path.join(__dirname, 'growth-core.js'));
 
@@ -319,7 +320,9 @@ function main(){
     if (!O.quiet && i % 20 === 0) say(`  step ${i}, ${sim.n} nodes`);
   }
 
-  fs.writeFileSync(O.output, toSvg(sim, P, O));
+  // an .svgz name means write it deflated; every renderer reads it as it is
+  const out = toSvg(sim, P, O);
+  fs.writeFileSync(O.output, /\.svgz$/i.test(O.output) ? zlib.gzipSync(out, { level: 9 }) : out);
   console.log(`${O.output} — ${sim.n} nodes, ${sim.steps} steps (${stop})`);
 }
 
