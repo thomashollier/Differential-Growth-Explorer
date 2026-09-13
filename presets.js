@@ -325,32 +325,6 @@ const PRESET_LIST = [
            follow: false, frame: { cx: -5, cy: 8, rx: 2440, ry: 1457 } },
   },
   {
-    name: 'Phyllotaxis', group: 'growth',
-    note: 'A hundred and sixty circles laid out on a golden-angle spiral, grown together. Each becomes a lobed cell that presses on its neighbours, and because no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget: run it on and the cells merge into one labyrinth and the arrangement is lost.',
-    cfg: { tileMode: 'spiral', tileCount: 160, tileTurn: 137.5, tileSpread: 5,
-           tileHole: 0.3, tileScaleMin: 0.13, tileScaleMax: 0.13,
-           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
-           repulsionRadius: 26, maxNodes: 10000, strokeWidth: 1.2 },
-  },
-  {
-    name: 'Scatter', group: 'growth',
-    note: 'Forty-five triangles, squares and circles dropped at random and kept only where they did not touch anything already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture.',
-    cfg: { tileMode: 'scatter', tileShape: 'mixed', tileCount: 45, tileSpread: 3.4,
-           tileGap: 0.1, tileScaleMin: 0.25, tileScaleMax: 0.6, tileSpin: 180,
-           seed: 7, startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
-           repulsionRadius: 26, maxNodes: 6500, strokeWidth: 1.2 },
-  },
-  {
-    name: 'Lattice', group: 'growth',
-    note: 'A five by seven grid, shaken a quarter of a spacing off the lattice and each tile spun at random. Regular enough that the rows still read, irregular enough that no two cells grow alike — and where two happen to land close, they flatten against each other instead of filling the gap.',
-    cfg: { tileMode: 'grid', tileShape: 'mixed', tileRows: 5, tileCols: 7,
-           // the spacing is wide enough to leave the shake somewhere to go
-           tileGap: 1.05, tileJitter: 0.8, tileSpin: 180,
-           tileScaleMin: 0.24, tileScaleMax: 0.34,
-           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
-           repulsionRadius: 26, maxNodes: 3500, strokeWidth: 1.2 },
-  },
-  {
     name: 'Corral', group: 'growth',
     note: 'A drawn boundary pens the growth in and two obstacles stand in its way. The walls push back like a line of nodes, so the curve keeps its distance, and the run ends when the boundary is full.',
     cfg: { seeds: [seed('circle')], startRadius: 55, repulsionRadius: 46,
@@ -760,7 +734,50 @@ const PRESET_LIST = [
            skWidthMin: 0.35, skWidthMax: 1.5, skOpMin: 0.2, skOpMax: 0.7,
            skHueMin: -28, skHueMax: 34, skSatMin: -0.35, skSatMax: 0.1,
            skValMin: -0.25, skValMax: 0.15 },
+  },  {
+    name: 'Phyllotaxis', group: 'creative',
+    note: 'A hundred and sixty circles laid out on a golden-angle spiral, grown together. Each becomes a lobed cell that presses on its neighbours, and because no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget: run it on and the cells merge into one labyrinth and the arrangement is lost.',
+    cfg: { tileMode: 'spiral', tileCount: 160, tileTurn: 137.5, tileSpread: 5,
+           tileHole: 0.3, tileScaleMin: 0.13, tileScaleMax: 0.13,
+           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+           repulsionRadius: 26, maxNodes: 10000,
+           // no outline at all: the cells are read as shapes against the ground,
+           // the way the florets of a seed head are
+           strokeOn: false, fillOn: true, tension: 0.4,
+           bg: '#efe2c2', fill: '#4a2f1b' },
   },
+  {
+    name: 'Scatter', group: 'creative',
+    note: 'Forty-five triangles, squares and circles dropped at random and kept only where they did not touch anything already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture.',
+    cfg: { tileMode: 'scatter', tileShape: 'mixed', tileCount: 45, tileSpread: 3.4,
+           tileGap: 0.1, tileScaleMin: 0.25, tileScaleMax: 0.6, tileSpin: 180,
+           seed: 7, startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+           repulsionRadius: 26, maxNodes: 6500, fillOn: false,
+           // sketched rather than outlined, so the field reads as a plate of
+           // specimens drawn one at a time
+           style: 'pencil', skPasses: 2, skDensity: 7,
+           skLenMin: 5, skLenMax: 22, skBowMin: 0.3, skBowMax: 0.7,
+           skJitMin: 0.8, skJitMax: 2.6, skWidthMin: 0.4, skWidthMax: 1.3,
+           skOpMin: 0.25, skOpMax: 0.75, strokeWidth: 1.4,
+           skHueMin: -28, skHueMax: 22, skSatMin: -0.25, skSatMax: 0.1,
+           skValMin: -0.18, skValMax: 0.08,
+           bg: '#f4f1ea', stroke: '#2f3a3e' },
+  },
+  {
+    name: 'Lattice', group: 'creative',
+    note: 'A five by seven grid, shaken off the lattice and each tile spun at random, drawn as a specimen sheet: contour echoes ring every cell, stepping round the colour wheel as they go out, so each one sits in its own halo. Regular enough that the rows still read, irregular enough that no two cells are alike.',
+    cfg: { tileMode: 'grid', tileShape: 'mixed', tileRows: 5, tileCols: 7,
+           // the spacing is wide enough to leave the shake somewhere to go
+           tileGap: 1.05, tileJitter: 0.8, tileSpin: 180,
+           tileScaleMin: 0.24, tileScaleMax: 0.34,
+           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+           repulsionRadius: 26, maxNodes: 3500,
+           style: 'contour', ctCount: 5, ctGap: 5, ctFade: 0.68,
+           strokeWidth: 1.6, fillOn: false,
+           skHueMin: -30, skHueMax: 45, skSatMin: -0.2, skSatMax: 0.1,
+           bg: '#fbf7ef', stroke: '#3d5a5b' },
+  },
+
 ];
 
 /* name -> full settings */
