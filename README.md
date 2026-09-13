@@ -43,6 +43,8 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Tracings](examples/tracings.png) | **Tracings** — two outlines drawn by hand and set side by side. A traced seed keeps the place and size it was drawn at, so the pair grows exactly where it was put, each pressing on the other where they meet. The pause at the budget is off: the ten thousand nodes go in seventy-eight steps, and the five hundred after them are what combs the fringes out and settles the line between the two. |
 | ![Snail](examples/snail.png) | **Snail** — a spiral traced by hand in one open line and grown to twenty thousand nodes. An open strand has two ends and no inside, so rather than filling a body it folds back on itself until it has packed the area out, and the turns of the original spiral still read as bands across the finished sheet. |
 | ![Warren](examples/warren.png) | **Warren** — edges a third the usual length, nothing skipped in the repulsion, and heavy smoothing. Every node feels every neighbour, so the folding is as fine and as even as the tool gets: a round mass packed with passages of one width throughout, with none of the radial arms the coarser settings throw out. The budget goes in thirty-five steps and twelve hundred more go into working the folds even. |
+| ![Phyllotaxis](examples/phyllotaxis.png) | **Phyllotaxis** — 160 circles laid out on a golden-angle spiral and grown together. Each becomes a lobed cell pressing on its neighbours, and since no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget on purpose: run it on and the cells merge into one labyrinth and the arrangement is gone. |
+| ![Scatter](examples/scatter.png) | **Scatter** — 45 triangles, squares and circles dropped at random and kept only where they touched nothing already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications
@@ -109,6 +111,20 @@ Choosing any of them puts the shape on the canvas provisionally, and a bar over 
 canvas asks what to do with it: **Add** puts it alongside what is already growing,
 **Replace** makes it the only seed, **Cancel** leaves things as they were. Tracing works
 the same way, with Add and Replace live once the line is long enough.
+
+**Arrangements** (same menu) lay out a whole field of seeds at once. *Phyllotaxis* places
+circles on a golden-angle spiral — the sunflower packing, which is what stops successive
+rings lining up into spokes. *Scatter* drops triangles, squares and circles at random sizes
+and rotations and keeps only those that touch nothing already placed, so picking it again
+rerolls the layout. **Arrangement size** sets how many either one makes; it is read when
+you pick, so change it and pick again. Both arrive on the same Add / Replace / Cancel bar,
+so Cancel drops the whole field, and afterwards every shape is an ordinary seed you can
+select, drag and transform.
+
+These only stay interesting while the cells are still separate. Growth runs until the node
+budget, and if you let it run on, the outlines fill every gap and the arrangement is lost
+in a labyrinth indistinguishable from a single seed's. Adapted from the shape studies in
+[Jason Webb's 2d-differential-growth-experiments](https://github.com/jasonwebb/2d-differential-growth-experiments).
 
 **Import SVG…** reads a file and turns every shape in it into a traced outline. It walks
 each shape with `getPointAtLength` rather than parsing path commands, so paths, polygons,

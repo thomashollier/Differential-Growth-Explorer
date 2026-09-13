@@ -38,6 +38,70 @@ function resolveDrawn(p){
    angle. Older settings stored a bare list of shape names, which is read as
    instances with no transform — and, if several were built-in shapes that would
    otherwise land on top of each other, laid out in a row as they used to be. */
+/* ---- seed arrangements ----------------------------------------------------
+   Both of these return a list of seed instances, the same shape the panel
+   builds by hand, so everything downstream — repulsion between curves, the
+   transform controls, saving — works on them unchanged. Distances are laid out
+   in multiples of the seed radius R and written out in world units, since that
+   is what an instance's dx/dy mean.
+
+   Adapted from Jason Webb's 2d-differential-growth-experiments shape studies
+   (github.com/jasonwebb/2d-differential-growth-experiments), where they are
+   built with p5 and a polygon-overlap test. */
+
+/* Circles on a golden-angle spiral: the arrangement leaves in a sunflower. */
+function phyllotaxisSeeds(count, R, opts){
+  const o = opts || {};
+  const field = o.field === undefined ? 5 : o.field;      // outer radius, in seed radii
+  const hole = o.hole === undefined ? 0.45 : o.hole;      // clear middle, as a fraction
+  const size = o.size === undefined ? 0.13 : o.size;      // each circle, in seed radii
+  const sides = o.sides === undefined ? 16 : o.sides;
+  // the golden angle is what stops successive rings lining up into spokes
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const out = [];
+  for (let i = 1; i <= count; i++){
+    const t = i / count;
+    // square root, or the middle is crowded and the rim is bare
+    const r = Math.sqrt(t) * field;
+    if (r < hole * field) continue;
+    const a = i * golden;
+    out.push({ key: 'ring', dx: Math.cos(a) * r * R, dy: Math.sin(a) * r * R,
+               rot: 0, scale: size, sides });
+  }
+  return out;
+}
+
+/* Polygons dropped at random and kept only where they do not touch anything
+   already placed. Testing the circumscribed circles rather than the polygons
+   themselves is conservative — it leaves a little air around a triangle — which
+   is what you want anyway, since two seeds that start touching grow as one. */
+function scatterSeeds(count, R, rnd, opts){
+  const o = opts || {};
+  const field = o.field === undefined ? 4.2 : o.field;
+  const lo = o.min === undefined ? 0.16 : o.min;
+  const hi = o.max === undefined ? 0.5 : o.max;
+  const gap = o.gap === undefined ? 0.1 : o.gap;
+  const kinds = o.sides || [3, 4, 24];
+  const out = [];
+  let tries = 0;
+  while (out.length < count && tries < count * 400){
+    tries++;
+    // uniform over the disc, not over the radius
+    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * field;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    const s = lo + rnd() * (hi - lo);
+    let clear = true;
+    for (const e of out){
+      const dx = e.dx / R - x, dy = e.dy / R - y;
+      if (Math.hypot(dx, dy) < e.scale + s + gap){ clear = false; break; }
+    }
+    if (!clear) continue;
+    out.push({ key: 'ring', dx: x * R, dy: y * R, rot: rnd() * 360,
+               scale: s, sides: kinds[(rnd() * kinds.length) | 0] });
+  }
+  return out;
+}
+
 function normaliseSeeds(p){
   const raw = p.seeds;
   if (!Array.isArray(raw)) return [{ key: p.shape, dx: 0, dy: 0, rot: 0, scale: 1 }];
@@ -46,7 +110,8 @@ function normaliseSeeds(p){
   const list = raw.map(e => typeof e === 'string'
     ? { key: e, dx: 0, dy: 0, rot: 0, scale: 1 }
     : { key: e.key, dx: e.dx || 0, dy: e.dy || 0,
-        rot: e.rot || 0, scale: e.scale === undefined ? 1 : e.scale });
+        rot: e.rot || 0, scale: e.scale === undefined ? 1 : e.scale,
+        sides: e.sides });
 
   if (legacy){
     const builtIn = list.filter(e => !resolveDrawn({ ...p, shape: e.key }));
@@ -239,14 +304,16 @@ class Growth {
       const drawn = resolveDrawn({ ...p, shape: inst.key });
       const base = (drawn && drawn.pts.length >= 3)
         ? { pts: drawn.pts, closed: drawn.closed }
-        : this.builtInSeed(inst.key, 0, 0, p.startRadius);
+        : this.builtInSeed(inst.key, 0, 0, p.startRadius, inst.sides);
       out.push({ pts: transformPts(base.pts, inst), closed: base.closed });
     }
     return out;
   }
 
-  builtInSeed(shape, cx, cy, R){
-    const count = Math.max(3, this.p.initialNodes | 0);
+  builtInSeed(shape, cx, cy, R, sides){
+    // an arrangement gives each shape its own corner count; otherwise they all
+    // take the one from the panel
+    const count = Math.max(3, (sides || this.p.initialNodes) | 0);
     const rr = (a, b) => a + this.rnd() * (b - a);
     const pts = [];
 
@@ -1516,6 +1583,6 @@ function offsetNode(sim, rg, i, d){
 ---------------------------------------------------------------------------- */
 if (typeof module !== 'undefined' && module.exports){
   module.exports = { mulberry32, Growth, Barrier, tangent, emitPath, resolveDrawn,
-                    normaliseSeeds, transformPts,
+                    normaliseSeeds, transformPts, phyllotaxisSeeds, scatterSeeds,
                     STYLES, canvasSink, svgSink, arcTable };
 }
