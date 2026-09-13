@@ -56,6 +56,18 @@ const FLAGS = {
   'dot-spacing':       ['stSpacing', 'num', 7],
   'dot-size':          ['stSizeMin:stSizeMax', 'range', [0.6, 2.6]],
   'dot-scatter':       ['stScatMin:stScatMax', 'range', [0, 2.5]],
+  'tile':              ['tileMode', 'str', 'none'],
+  'tile-shape':        ['tileShape', 'str', 'ring'],
+  'tile-rows':         ['tileRows', 'num', 4],
+  'tile-cols':         ['tileCols', 'num', 6],
+  'tile-count':        ['tileCount', 'num', 160],
+  'tile-turn':         ['tileTurn', 'num', 137.5],
+  'tile-spread':       ['tileSpread', 'num', 5],
+  'tile-hole':         ['tileHole', 'num', 0.3],
+  'tile-gap':          ['tileGap', 'num', 0.85],
+  'tile-jitter':       ['tileJitter', 'num', 0],
+  'tile-spin':         ['tileSpin', 'num', 0],
+  'tile-size':         ['tileScaleMin:tileScaleMax', 'range', [0.3, 0.3]],
   'blend':             ['blend', 'str', 'normal'],
   'dot-power':         ['stScatPow', 'num', 5],
   'dot-opacity':       ['stOpMin:stOpMax', 'range', [0.25, 0.9]],
@@ -109,6 +121,15 @@ Forces
   --wall-repulsion N     how hard drawn walls push back (x repulsion-factor)
   --noise-factor N       --damping N           --smoothing N
   --repulsion-skip N     --split-jitter N      --prune-short
+
+Tiling
+  --tile MODE            none | grid | spiral | scatter
+  --tile-shape NAME      circle | ring | star | square | line | mixed
+  --tile-size MIN,MAX    each seed's size, as a fraction of the seed radius
+  --tile-spin N          random rotation either way, in degrees
+  (grid)    --tile-rows N --tile-cols N --tile-gap N --tile-jitter N
+  (spiral)  --tile-count N --tile-turn DEG --tile-spread N --tile-hole N
+  (scatter) --tile-count N --tile-spread N --tile-gap N
 
 Constraints
   --boundary-path "x,y ..."   area the growth must stay inside

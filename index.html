@@ -222,6 +222,11 @@
           <div id="ctl-shape"></div>
         </div>
       </div>
+      <div class="sect" data-sect="tiling">
+        <div class="hrow"><h2>Tiling</h2><select id="tileSel"
+          title="Lay the seed out as a field instead of placing shapes one at a time. The field is worked out from these numbers, so changing one relays the whole thing."></select></div>
+        <div class="body" id="ctl-tile"></div>
+      </div>
       <div class="sect" data-sect="constraints">
         <h2>Constraints</h2>
         <div class="body">
@@ -329,7 +334,10 @@ const P = {
   skPasses:2, skDensity:9, skBowMin:0.2, skBowMax:0.5, skJitMin:1.2, skJitMax:3.6,
   skLenMin:16, skLenMax:54, skWidthMin:0.4, skWidthMax:1.6, skOpMin:0.25, skOpMax:0.8,
   skHueMin:-10, skHueMax:10, skSatMin:-0.1, skSatMax:0.1, skValMin:-0.12, skValMax:0.12,
-  arrangeCount:120,
+  tileMode:'none', tileShape:'ring',
+  tileRows:4, tileCols:6, tileGap:0.85, tileJitter:0,
+  tileCount:160, tileSpread:5, tileHole:0.3, tileTurn:137.5,
+  tileScaleMin:0.3, tileScaleMax:0.3, tileSpin:0,
   stSpacing:7, stSizeMin:0.6, stSizeMax:2.6, stScatMin:0, stScatMax:2.5, stScatPow:5,
   lnGain:0.4, lnKeep:1, lnMode:'sample', lnFade:0, lnW0:1.6, lnW1:0.3,
   stOpMin:0.25, stOpMax:0.9,
@@ -369,9 +377,28 @@ const CONTROLS = {
     {k:'maxNodes',       lbl:'Node budget',   min:200, max:20000, step:100, hint:'growth stops here to keep the frame rate up'},
     {k:'settleAt',       lbl:'Settle at',     min:0, max:0.1, step:0.0002, log:0.0002,
      hint:'stop once the outline stops getting anywhere: how much its length changed over the last hundred steps, as a fraction. Off never stops for this. The HUD shows the live figure'},
-    {k:'arrangeCount',   lbl:'Arrangement size', min:10, max:400, step:5,
-     hint:'how many shapes the Phyllotaxis and Scatter entries in the seed menu lay out. Read when you pick one, so change it and pick again'},
     {k:'splitJitter',    lbl:'Split jitter',  min:0,   max:4,     step:0.1, hint:'random offset given to each new node'},
+  ],
+  tile: [
+    {k:'tileRows',  lbl:'Rows',    min:1, max:24, step:1, tile:'grid', restart:true},
+    {k:'tileCols',  lbl:'Columns', min:1, max:24, step:1, tile:'grid', restart:true},
+    {k:'tileCount', lbl:'Count',   min:2, max:400, step:1, tile:'spiral,scatter',
+     hint:'how many to lay out. Scatter may place fewer if it runs out of room', restart:true},
+    {k:'tileTurn',  lbl:'Turn',    min:0, max:180, step:0.1, tile:'spiral',
+     hint:'degrees between one seed and the next. 137.5 is the golden angle, which is what stops successive rings lining up into spokes \u2014 move off it and they do', restart:true},
+    {k:'tileSpread', lbl:'Spread', min:0.5, max:12, step:0.1, tile:'spiral,scatter',
+     hint:'radius of the field, in seed radii', restart:true},
+    {k:'tileHole',  lbl:'Hole',    min:0, max:0.9, step:0.01, tile:'spiral',
+     hint:'clears the middle, as a fraction of the spread', restart:true},
+    {k:'tileGap',   lbl:'Spacing', min:0.05, max:4, step:0.05, tile:'grid,scatter',
+     hint:'distance between one seed and the next on a grid, or the least air left between two on a scatter. In seed radii', restart:true},
+    {k:'tileJitter', lbl:'Jitter', min:0, max:1, step:0.01, tile:'grid',
+     hint:'shakes each one off the lattice, as a fraction of the room left between two tiles. Two seeds that start out overlapping knot instead of growing into two cells, so this can never push them that far \u2014 widen the spacing to buy more shake', restart:true},
+    {kMin:'tileScaleMin', kMax:'tileScaleMax', lbl:'Tile size', min:0.05, max:2, step:0.01,
+     tile:'grid,spiral,scatter',
+     hint:'each seed takes a size from this range, as a fraction of the seed radius. Both ends equal for a uniform field', restart:true},
+    {k:'tileSpin',  lbl:'Spin',    min:0, max:180, step:1, tile:'grid,spiral,scatter',
+     hint:'random rotation given to each one, in degrees either way', restart:true},
   ],
   render: [
     {k:'stampEvery',  lbl:'Stack every',  min:1, max:40, step:1, trail:true,
@@ -494,6 +521,7 @@ function slider(def){
     if (def.restart) restart();
   });
   if (def.style) wrap.dataset.style = def.style;
+  if (def.tile) wrap.dataset.tile = def.tile;
   sync();
   registry.push(sync);
   return wrap;
@@ -508,6 +536,10 @@ function syncAll(){
     el.style.display = on ? '' : 'none';
     if (on) shown++;
   });
+  // and the tiling rows belonging to the chosen layout
+  document.querySelectorAll('[data-tile]').forEach(el => {
+    el.style.display = el.dataset.tile.split(',').includes(P.tileMode) ? '' : 'none';
+  });
 }
 
 function buildGroup(id, defs){
@@ -515,6 +547,27 @@ function buildGroup(id, defs){
   defs.forEach(d => host.appendChild(slider(d)));
 }
 buildGroup('ctl-shape',  CONTROLS.shape);
+
+/* ---- tiling ----
+   The field is derived from these numbers by growth-core, so there is nothing
+   to place: change one and the whole layout is relaid on the next restart. */
+(function(){
+  const host = document.getElementById('ctl-tile');
+  const sel = document.getElementById('tileSel');
+  for (const [v, label] of [['none', 'off'], ['grid', 'Grid'],
+                            ['spiral', 'Spiral'], ['scatter', 'Scatter']])
+    sel.add(new Option(label, v));
+  sel.onchange = () => { P.tileMode = sel.value; syncAll(); restart({ play:true }); };
+  sel.onclick = (e) => e.stopPropagation();
+
+  host.appendChild(choice({
+    k:'tileShape', lbl:'Shape', tile:'grid,spiral,scatter', restart:true,
+    options: TILE_SHAPES.map(k => [k, k]).concat([['mixed', 'mixed']]),
+    hint:'what to tile. Mixed gives each one three, four or many sides, so what a shape started as stays legible in the arms it puts out'}));
+  CONTROLS.tile.forEach(d => host.appendChild(d.kMin ? rangeRow(d) : slider(d)));
+
+  registry.push(() => { sel.value = P.tileMode; });
+})();
 buildGroup('ctl-growth', CONTROLS.growth);
 buildGroup('ctl-forces', CONTROLS.forces);
 buildGroup('ctl-sim',    CONTROLS.sim);
@@ -548,12 +601,6 @@ function renderShapes(){
       grp.appendChild(new Option(d.name + (d.closed ? '' : '  (open)'), 'drawn:' + d.id));
     shapeSel.appendChild(grp);
   }
-  const ag = document.createElement('optgroup');
-  ag.label = 'arrangements';
-  ag.appendChild(new Option('Phyllotaxis', 'arr:phyllo'));
-  ag.appendChild(new Option('Scatter', 'arr:scatter'));
-  shapeSel.appendChild(ag);
-
   const dg = document.createElement('optgroup');
   dg.label = 'draw your own';
   dg.appendChild(new Option('Draw closed\u2026', 'draw:closed'));
@@ -569,7 +616,6 @@ shapeSel.onchange = () => {
   if (v === 'draw:closed'){ beginDraw('seedClosed'); return; }
   if (v === 'draw:open'){ beginDraw('seedOpen'); return; }
   if (v === 'draw:svg'){ shapeSel.value = ''; importSvg(); return; }
-  if (v.startsWith('arr:')){ shapeSel.value = ''; placeArrangement(v.slice(4)); return; }
   placeShape(v);
 };
 
@@ -580,28 +626,6 @@ function freeSpot(){
   if (!n) return { dx: 0, dy: 0 };
   const gap = P.startRadius * 2.6;
   return { dx: n % 2 ? gap * Math.ceil(n / 2) : -gap * (n / 2), dy: 0 };
-}
-
-/* A whole field of seeds at once, laid out by one of the generators. They land
-   on the same Add / Replace / Cancel bar as a single shape, so Cancel drops the
-   entire arrangement, and each one is an ordinary seed afterwards — selectable,
-   draggable, transformable. Picking Scatter again rerolls it. */
-let arrangeRoll = 0;
-function placeArrangement(kind){
-  const n = Math.max(4, P.arrangeCount | 0);
-  const seeds = kind === 'phyllo'
-    ? phyllotaxisSeeds(n, P.startRadius, { hole: 0.3 })
-    : scatterSeeds(n, P.startRadius, mulberry32((P.seed >>> 0) + (arrangeRoll++ * 7919)),
-                   { field: 3.4, min: 0.25, max: 0.6 });
-  if (!seeds.length){ flash('That arrangement came out empty \u2014 try a larger count'); return; }
-  prevSeeds = (P.seeds || []).map(e => ({ ...e }));
-  P.seeds = (P.seeds || []).concat(seeds);
-  pendingIdx = P.seeds.length - seeds.length;   // cancel drops the whole field
-  selSeed = P.seeds.length - 1;
-  setBarMode('place');
-  syncAll();
-  restart({ play:false });
-  flash(seeds.length + ' shapes placed \u2014 Add keeps them alongside what is there, Replace makes them the only seeds');
 }
 
 function placeShape(key){
@@ -704,25 +728,20 @@ function renderSeeds(){
   const seeds = P.seeds || [];
   if (selSeed >= seeds.length) selSeed = seeds.length - 1;
 
-  /* An arrangement is hundreds of seeds and a pill apiece would bury the rest
-     of the panel. Past a dozen they collapse to one line: the selected seed,
-     still with its transform controls, and a count that clears the lot. Picking
-     a different one is a click on the canvas. */
-  if (seeds.length > 12){
+  /* While a field is tiled the seed list is not the source of truth — the
+     Tiling section is — so there is nothing here to select or move. */
+  if (P.tileMode && P.tileMode !== 'none'){
     const chip = document.createElement('span');
     chip.className = 'chip saved on';
     const name = document.createElement('button');
-    name.textContent = seeds.length + ' shapes';
-    name.title = 'A field of seeds. Click one on the canvas to select it';
-    const del = document.createElement('button');
-    del.className = 'x'; del.textContent = '\u00d7'; del.title = 'Remove all of them';
-    del.onclick = () => {
-      P.seeds = []; selSeed = -1;
-      applyShapeDefaults(); syncAll(); restart({ play:false });
-    };
-    chip.appendChild(name); chip.appendChild(del);
+    // counted from the parameters, not from the running simulation, which may
+    // not have been rebuilt yet when this is drawn
+    const field = tileSeeds(P);
+    name.textContent = (field ? field.length : 0) + ' tiled';
+    name.title = 'Laid out by the Tiling section. Turn tiling off to place shapes by hand again';
+    chip.appendChild(name);
     box.appendChild(chip);
-    renderXform();
+    document.getElementById('seedXform').innerHTML = '';
     return;
   }
 
@@ -911,6 +930,7 @@ function rangeRow(def){
     + `<i></i>`;
   if (def.hint) wrap.title = def.hint;
   if (def.style) wrap.dataset.style = def.style;
+  if (def.tile) wrap.dataset.tile = def.tile;
 
   const dual = wrap.querySelector('.dual');
   const fill = wrap.querySelector('.fill');
@@ -986,6 +1006,7 @@ function choice(def){
   const sync = () => { sel.value = P[def.k]; };
   sel.onchange = () => { P[def.k] = sel.value; if (def.restart) restart({ play:true }); else draw(); };
   if (def.style) wrap.dataset.style = def.style;
+  if (def.tile) wrap.dataset.tile = def.tile;
   sync(); registry.push(sync);
   return wrap;
 }

@@ -45,6 +45,7 @@ only thing differing between them is the form, and any walls are left visible.
 | ![Warren](examples/warren.png) | **Warren** — edges a third the usual length, nothing skipped in the repulsion, and heavy smoothing. Every node feels every neighbour, so the folding is as fine and as even as the tool gets: a round mass packed with passages of one width throughout, with none of the radial arms the coarser settings throw out. The budget goes in thirty-five steps and twelve hundred more go into working the folds even. |
 | ![Phyllotaxis](examples/phyllotaxis.png) | **Phyllotaxis** — 160 circles laid out on a golden-angle spiral and grown together. Each becomes a lobed cell pressing on its neighbours, and since no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget on purpose: run it on and the cells merge into one labyrinth and the arrangement is gone. |
 | ![Scatter](examples/scatter.png) | **Scatter** — 45 triangles, squares and circles dropped at random and kept only where they touched nothing already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture. |
+| ![Lattice](examples/lattice.png) | **Lattice** — a five by seven grid, shaken a quarter of a spacing off the lattice with each tile spun at random. Regular enough that the rows still read, irregular enough that no two cells grow alike; where two land close they flatten against each other rather than filling the gap. |
 | ![Corral](examples/corral.png) | **Corral** — a drawn boundary pens the growth in and two obstacles stand in its way. The walls are shown dashed, as they are in the app. |
 
 ### Applications
@@ -112,20 +113,6 @@ canvas asks what to do with it: **Add** puts it alongside what is already growin
 **Replace** makes it the only seed, **Cancel** leaves things as they were. Tracing works
 the same way, with Add and Replace live once the line is long enough.
 
-**Arrangements** (same menu) lay out a whole field of seeds at once. *Phyllotaxis* places
-circles on a golden-angle spiral — the sunflower packing, which is what stops successive
-rings lining up into spokes. *Scatter* drops triangles, squares and circles at random sizes
-and rotations and keeps only those that touch nothing already placed, so picking it again
-rerolls the layout. **Arrangement size** sets how many either one makes; it is read when
-you pick, so change it and pick again. Both arrive on the same Add / Replace / Cancel bar,
-so Cancel drops the whole field, and afterwards every shape is an ordinary seed you can
-select, drag and transform.
-
-These only stay interesting while the cells are still separate. Growth runs until the node
-budget, and if you let it run on, the outlines fill every gap and the arrangement is lost
-in a labyrinth indistinguishable from a single seed's. Adapted from the shape studies in
-[Jason Webb's 2d-differential-growth-experiments](https://github.com/jasonwebb/2d-differential-growth-experiments).
-
 **Import SVG…** reads a file and turns every shape in it into a traced outline. It walks
 each shape with `getPointAtLength` rather than parsing path commands, so paths, polygons,
 rectangles, circles and the rest all work and their transforms come along; a path that
@@ -144,6 +131,37 @@ the selected one solid, and disappear once growth starts. Scale and rotation wor
 each shape's own centre. A traced outline keeps the position and size you drew it at.
 
 **Clear** (next to Auto-fit) empties the canvas — nothing grows until a shape is chosen.
+
+### Tiling
+
+Instead of placing shapes one at a time, lay the seed out as a field. The **Tiling**
+section has a layout and its numbers, and the field is *derived* from them — there is
+nothing to place, and changing any of them relays the whole thing. **Shape** picks what
+gets tiled; *mixed* gives each tile three, four or many sides, so what a cell started as
+stays legible in the arms it puts out.
+
+- **Grid** — **Rows**, **Columns**, **Spacing**, and **Jitter** to shake each one off the
+  lattice.
+- **Spiral** — **Count**, **Spread**, a **Hole** to clear the middle, and **Turn**, the
+  angle between one seed and the next. 137.5° is the golden angle and gives phyllotaxis,
+  the sunflower packing; the reason that number and not another is that it is the one that
+  never repeats, so successive rings cannot line up. Move a degree off it and the spokes
+  come straight back.
+- **Scatter** — **Count** dropped at random within **Spread**, keeping only those with at
+  least **Spacing** of air around them. It may place fewer than you ask if it runs out of
+  room.
+
+All three take a **Tile size** range and a **Spin**. While tiling is on the seed list
+shows the count rather than the shapes, since the layout, not the list, is the source of
+truth; turn it off to go back to placing by hand.
+
+A tiled field is only interesting while its cells are still separate. Growth runs to the
+node budget, and if you let it run on, the outlines fill every gap and the arrangement is
+lost in a labyrinth indistinguishable from a single seed's — at 1,200 steps the spiral is
+completely gone. Choosing the budget is choosing how much cell you get.
+
+The spiral and scatter layouts are adapted from the shape studies in
+[Jason Webb's 2d-differential-growth-experiments](https://github.com/jasonwebb/2d-differential-growth-experiments).
 
 ### Constraints
 

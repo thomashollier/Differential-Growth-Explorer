@@ -38,50 +38,68 @@ function resolveDrawn(p){
    angle. Older settings stored a bare list of shape names, which is read as
    instances with no transform — and, if several were built-in shapes that would
    otherwise land on top of each other, laid out in a row as they used to be. */
-/* ---- seed arrangements ----------------------------------------------------
-   Both of these return a list of seed instances, the same shape the panel
-   builds by hand, so everything downstream — repulsion between curves, the
-   transform controls, saving — works on them unchanged. Distances are laid out
-   in multiples of the seed radius R and written out in world units, since that
-   is what an instance's dx/dy mean.
+/* ---- tiling -----------------------------------------------------------------
+   A field of seeds laid out from parameters rather than placed by hand. The
+   result is an ordinary seed list, so repulsion between curves, saving and the
+   render styles all work on it unchanged, and because it is derived rather than
+   stored, changing a number relays the whole field.
 
-   Adapted from Jason Webb's 2d-differential-growth-experiments shape studies
-   (github.com/jasonwebb/2d-differential-growth-experiments), where they are
-   built with p5 and a polygon-overlap test. */
+   Distances are in multiples of the seed radius and written out in world units,
+   which is what an instance's dx/dy mean. Sizes are a scale on the same radius.
 
-/* Circles on a golden-angle spiral: the arrangement leaves in a sunflower. */
-function phyllotaxisSeeds(count, R, opts){
-  const o = opts || {};
-  const field = o.field === undefined ? 5 : o.field;      // outer radius, in seed radii
-  const hole = o.hole === undefined ? 0.45 : o.hole;      // clear middle, as a fraction
-  const size = o.size === undefined ? 0.13 : o.size;      // each circle, in seed radii
-  const sides = o.sides === undefined ? 16 : o.sides;
-  // the golden angle is what stops successive rings lining up into spokes
-  const golden = Math.PI * (3 - Math.sqrt(5));
+   The spiral and scatter layouts are adapted from the shape studies in Jason
+   Webb's 2d-differential-growth-experiments. */
+
+const TILE_SHAPES = ['circle', 'ring', 'star', 'square', 'line'];
+
+/* Rows and columns, optionally shaken off the lattice. The shake is a fraction
+   of the room actually left between two tiles, not of the spacing: two seeds
+   that start out overlapping do not grow into two cells, they knot, and a
+   jitter measured against the spacing walks them into each other as soon as the
+   tiles are anywhere near as wide as the gap. Widen the spacing to buy more
+   shake. */
+function gridTiles(p, R, rnd, hi){
+  const rows = Math.max(1, p.tileRows | 0), cols = Math.max(1, p.tileCols | 0);
+  const gap = (p.tileGap === undefined ? 0.85 : p.tileGap);
+  const room = Math.max(0, (gap - 2 * hi) / 2);
+  const jit = (p.tileJitter === undefined ? 0 : p.tileJitter) * room;
   const out = [];
-  for (let i = 1; i <= count; i++){
-    const t = i / count;
-    // square root, or the middle is crowded and the rim is bare
-    const r = Math.sqrt(t) * field;
-    if (r < hole * field) continue;
-    const a = i * golden;
-    out.push({ key: 'ring', dx: Math.cos(a) * r * R, dy: Math.sin(a) * r * R,
-               rot: 0, scale: size, sides });
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++){
+      const x = (c - (cols - 1) / 2) * gap + (rnd() * 2 - 1) * jit;
+      const y = (r - (rows - 1) / 2) * gap + (rnd() * 2 - 1) * jit;
+      out.push({ x, y });
+    }
   }
   return out;
 }
 
-/* Polygons dropped at random and kept only where they do not touch anything
-   already placed. Testing the circumscribed circles rather than the polygons
-   themselves is conservative — it leaves a little air around a triangle — which
-   is what you want anyway, since two seeds that start touching grow as one. */
-function scatterSeeds(count, R, rnd, opts){
-  const o = opts || {};
-  const field = o.field === undefined ? 4.2 : o.field;
-  const lo = o.min === undefined ? 0.16 : o.min;
-  const hi = o.max === undefined ? 0.5 : o.max;
-  const gap = o.gap === undefined ? 0.1 : o.gap;
-  const kinds = o.sides || [3, 4, 24];
+/* A turn of the given angle between one seed and the next, with the radius
+   going as the square root of the index so the disc fills evenly. At 137.5
+   degrees that is phyllotaxis; anything else spirals, spokes or rosettes. */
+function spiralTiles(p, R, rnd){
+  const count = Math.max(1, p.tileCount | 0);
+  const spread = p.tileSpread === undefined ? 5 : p.tileSpread;
+  const hole = p.tileHole === undefined ? 0.3 : p.tileHole;
+  const turn = (p.tileTurn === undefined ? 137.5 : p.tileTurn) * Math.PI / 180;
+  const out = [];
+  for (let i = 1; i <= count; i++){
+    const r = Math.sqrt(i / count) * spread;
+    if (r < hole * spread) continue;
+    const a = i * turn;
+    out.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+  }
+  return out;
+}
+
+/* Dropped at random and kept only where nothing already placed is in the way.
+   The test compares circumscribed circles rather than the shapes themselves,
+   which leaves a little air around a triangle — no bad thing, since two seeds
+   that start out touching grow as one curve. */
+function scatterTiles(p, R, rnd, sized){
+  const count = Math.max(1, p.tileCount | 0);
+  const field = p.tileSpread === undefined ? 4.2 : p.tileSpread;
+  const gap = p.tileGap === undefined ? 0.1 : p.tileGap;
   const out = [];
   let tries = 0;
   while (out.length < count && tries < count * 400){
@@ -89,24 +107,54 @@ function scatterSeeds(count, R, rnd, opts){
     // uniform over the disc, not over the radius
     const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * field;
     const x = Math.cos(a) * r, y = Math.sin(a) * r;
-    const s = lo + rnd() * (hi - lo);
+    const s = sized();
     let clear = true;
     for (const e of out){
-      const dx = e.dx / R - x, dy = e.dy / R - y;
-      if (Math.hypot(dx, dy) < e.scale + s + gap){ clear = false; break; }
+      if (Math.hypot(e.x - x, e.y - y) < e.s + s + gap){ clear = false; break; }
     }
-    if (!clear) continue;
-    out.push({ key: 'ring', dx: x * R, dy: y * R, rot: rnd() * 360,
-               scale: s, sides: kinds[(rnd() * kinds.length) | 0] });
+    if (clear) out.push({ x, y, s });
   }
   return out;
 }
 
+function tileSeeds(p){
+  const mode = p.tileMode;
+  if (!mode || mode === 'none') return null;
+  const R = p.startRadius || 125;
+  // its own stream, so laying out a field never shifts the growth's own randoms
+  const rnd = mulberry32(((p.seed >>> 0) ^ 0x632be59b) >>> 0);
+  const lo = p.tileScaleMin === undefined ? 0.3 : p.tileScaleMin;
+  const hi = Math.max(lo, p.tileScaleMax === undefined ? 0.3 : p.tileScaleMax);
+  const sized = () => lo + rnd() * (hi - lo);
+  const spin = p.tileSpin === undefined ? 0 : p.tileSpin;
+
+  const spots = mode === 'grid'    ? gridTiles(p, R, rnd, hi)
+              : mode === 'spiral'  ? spiralTiles(p, R, rnd)
+              : mode === 'scatter' ? scatterTiles(p, R, rnd, sized)
+              : null;
+  if (!spots) return null;
+
+  const mixed = p.tileShape === 'mixed';
+  const kinds = [3, 4, 24];
+  return spots.map((q) => {
+    const s = q.s === undefined ? sized() : q.s;
+    return {
+      key: mixed ? 'ring' : (p.tileShape || 'ring'),
+      dx: q.x * R, dy: q.y * R,
+      rot: spin ? (rnd() * 2 - 1) * spin : 0,
+      scale: s,
+      sides: mixed ? kinds[(rnd() * kinds.length) | 0] : undefined,
+    };
+  });
+}
+
 function normaliseSeeds(p){
-  const raw = p.seeds;
+  // a tiled field is derived from its parameters, so it wins over the list
+  const tiled = tileSeeds(p);
+  const raw = tiled || p.seeds;
   if (!Array.isArray(raw)) return [{ key: p.shape, dx: 0, dy: 0, rot: 0, scale: 1 }];
 
-  const legacy = raw.every(e => typeof e === 'string');
+  const legacy = !tiled && raw.length > 0 && raw.every(e => typeof e === 'string');
   const list = raw.map(e => typeof e === 'string'
     ? { key: e, dx: 0, dy: 0, rot: 0, scale: 1 }
     : { key: e.key, dx: e.dx || 0, dy: e.dy || 0,
@@ -1583,6 +1631,6 @@ function offsetNode(sim, rg, i, d){
 ---------------------------------------------------------------------------- */
 if (typeof module !== 'undefined' && module.exports){
   module.exports = { mulberry32, Growth, Barrier, tangent, emitPath, resolveDrawn,
-                    normaliseSeeds, transformPts, phyllotaxisSeeds, scatterSeeds,
+                    normaliseSeeds, transformPts, tileSeeds, TILE_SHAPES,
                     STYLES, canvasSink, svgSink, arcTable };
 }

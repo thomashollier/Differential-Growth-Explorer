@@ -41,11 +41,6 @@ const seed = (key, dx, dy, rot, scale) =>
    matters: `const phyllotaxisSeeds = ...` here would redeclare an existing
    global function and take the whole file down with a SyntaxError, which is
    silent apart from an empty preset menu. */
-const CORE = (typeof require !== 'undefined') ? require('./growth-core.js') : window;
-const spiralSeeds = CORE.phyllotaxisSeeds;
-const strewnSeeds = CORE.scatterSeeds;
-const prng = CORE.mulberry32;
-
 const BASE = {
   shape: 'circle', seeds: [seed('circle')],
   initialNodes: 10, startRadius: 125, seed: 10,
@@ -66,7 +61,10 @@ const BASE = {
   skOpMin: 0.25, skOpMax: 0.8,
   skHueMin: 0, skHueMax: 0, skSatMin: 0, skSatMax: 0, skValMin: 0, skValMax: 0,
   stSpacing: 7, stSizeMin: 0.6, stSizeMax: 2.6, stScatMin: 0, stScatMax: 2.5,
-  arrangeCount: 120,
+  tileMode: 'none', tileShape: 'ring',
+  tileRows: 4, tileCols: 6, tileGap: 0.85, tileJitter: 0,
+  tileCount: 160, tileSpread: 5, tileHole: 0.3, tileTurn: 137.5,
+  tileScaleMin: 0.3, tileScaleMax: 0.3, tileSpin: 0,
   stScatPow: 5,
   stOpMin: 0.25, stOpMax: 0.9,
   ctCount: 4, ctGap: 7, ctFade: 0.72,
@@ -329,16 +327,28 @@ const PRESET_LIST = [
   {
     name: 'Phyllotaxis', group: 'growth',
     note: 'A hundred and sixty circles laid out on a golden-angle spiral, grown together. Each becomes a lobed cell that presses on its neighbours, and because no two curves ever join, the sunflower arrangement survives as the pattern of the gaps between them. Stopped at the budget: run it on and the cells merge into one labyrinth and the arrangement is lost.',
-    cfg: { seeds: spiralSeeds(160, 125, { hole: 0.3 }), startRadius: 125,
-           initialNodes: 16, minEdge: 5, maxEdge: 9, repulsionRadius: 26,
-           maxNodes: 10000, strokeWidth: 1.2 },
+    cfg: { tileMode: 'spiral', tileCount: 160, tileTurn: 137.5, tileSpread: 5,
+           tileHole: 0.3, tileScaleMin: 0.13, tileScaleMax: 0.13,
+           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+           repulsionRadius: 26, maxNodes: 10000, strokeWidth: 1.2 },
   },
   {
     name: 'Scatter', group: 'growth',
     note: 'Forty-five triangles, squares and circles dropped at random and kept only where they did not touch anything already placed, then grown. What each one started as is still legible in the arms it puts out — three, four, or a ring of them — so the field reads as a population rather than a texture.',
-    cfg: { seeds: strewnSeeds(45, 125, prng(7), { field: 3.4, min: 0.25, max: 0.6 }),
-           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+    cfg: { tileMode: 'scatter', tileShape: 'mixed', tileCount: 45, tileSpread: 3.4,
+           tileGap: 0.1, tileScaleMin: 0.25, tileScaleMax: 0.6, tileSpin: 180,
+           seed: 7, startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
            repulsionRadius: 26, maxNodes: 6500, strokeWidth: 1.2 },
+  },
+  {
+    name: 'Lattice', group: 'growth',
+    note: 'A five by seven grid, shaken a quarter of a spacing off the lattice and each tile spun at random. Regular enough that the rows still read, irregular enough that no two cells grow alike — and where two happen to land close, they flatten against each other instead of filling the gap.',
+    cfg: { tileMode: 'grid', tileShape: 'mixed', tileRows: 5, tileCols: 7,
+           // the spacing is wide enough to leave the shake somewhere to go
+           tileGap: 1.05, tileJitter: 0.8, tileSpin: 180,
+           tileScaleMin: 0.24, tileScaleMax: 0.34,
+           startRadius: 125, initialNodes: 16, minEdge: 5, maxEdge: 9,
+           repulsionRadius: 26, maxNodes: 3500, strokeWidth: 1.2 },
   },
   {
     name: 'Corral', group: 'growth',
