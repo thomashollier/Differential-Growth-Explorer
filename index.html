@@ -342,6 +342,7 @@ const P = {
   lnGain:0.4, lnKeep:1, lnMode:'sample', lnFade:0, lnW0:1.6, lnW1:0.3,
   stOpMin:0.25, stOpMax:0.9,
   ctCount:4, ctGap:7, ctFade:0.72,
+  clWidthMode:'curvature', clWidthLo:0.4, clWidthHi:3, clPenAngle:45, clPenField:'wind', clPenTurns:1,
   bg:'#ffffff', fill:'#000000', stroke:'#ff0000', showNodes:false, showConstraints:true, follow:true
 };
 
@@ -448,11 +449,17 @@ const CONTROLS = {
      hint:'distance between one echo and the next'},
     {k:'ctFade', lbl:'Echo fade', min:0.2, max:1, step:0.01, style:'contour',
      hint:'how much fainter each echo is than the one inside it'},
-    {kMin:'skHueMin', kMax:'skHueMax', lbl:'Hue \u00b1', min:-180, max:180, step:1, style:'pencil,stipple,contour',
+    {kMin:'clWidthLo', kMax:'clWidthHi', lbl:'Width range', min:0, max:6, step:0.05, style:'calligraphic',
+     hint:'the low and high ends of the stroke weight, each as a multiple of the stroke width above. Which end a stroke lands on is decided by Width by, below'},
+    {k:'clPenAngle', lbl:'Pen angle', min:0, max:360, step:1, style:'calligraphic', clmode:'alignment',
+     hint:'the broad edge of the nib, in degrees. 45 is the classic calligraphic angle. In Spiral this is an offset rather than the direction itself'},
+    {k:'clPenTurns', lbl:'Spiral turns', min:-4, max:4, step:1, style:'calligraphic', clmode:'alignment',
+     hint:'only in Spiral: how many times the pen direction winds around as you go once around the centre. 1 makes an even pinwheel, 0 falls back to a fixed direction, negative reverses the wind'},
+    {kMin:'skHueMin', kMax:'skHueMax', lbl:'Hue \u00b1', min:-180, max:180, step:1, style:'pencil,stipple,contour,calligraphic',
      hint:'degrees each stroke may be shifted around the colour wheel from the stroke colour'},
-    {kMin:'skSatMin', kMax:'skSatMax', lbl:'Saturation \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour',
+    {kMin:'skSatMin', kMax:'skSatMax', lbl:'Saturation \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour,calligraphic',
      hint:'how much more or less saturated a stroke may be than the stroke colour'},
-    {kMin:'skValMin', kMax:'skValMax', lbl:'Value \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour',
+    {kMin:'skValMin', kMax:'skValMax', lbl:'Value \u00b1', min:-1, max:1, step:0.01, style:'pencil,stipple,contour,calligraphic',
      hint:'how much lighter or darker a stroke may be. This is what varies a black sketch, where hue and saturation have nothing to work with'},
   ]
 };
@@ -524,6 +531,7 @@ function slider(def){
   });
   if (def.style) wrap.dataset.style = def.style;
   if (def.tile) wrap.dataset.tile = def.tile;
+  if (def.clmode) wrap.dataset.clmode = def.clmode;
   sync();
   registry.push(sync);
   return wrap;
@@ -531,16 +539,15 @@ function slider(def){
 const registry = [];   // re-sync every widget after a preset load
 function syncAll(){
   registry.forEach(f => f());
-  // only show the controls belonging to the selected style
-  let shown = 0;
-  document.querySelectorAll('[data-style]').forEach(el => {
-    const on = el.dataset.style.split(',').includes(P.style);
+  // only show the controls belonging to the selected style, the tiling rows
+  // belonging to the chosen layout, and — a row may carry both — a style's
+  // own sub-mode (calligraphic's Width by, currently the only one)
+  document.querySelectorAll('[data-style],[data-tile],[data-clmode]').forEach(el => {
+    let on = true;
+    if (el.dataset.style) on = on && el.dataset.style.split(',').includes(P.style);
+    if (el.dataset.tile) on = on && el.dataset.tile.split(',').includes(P.tileMode);
+    if (el.dataset.clmode) on = on && el.dataset.clmode.split(',').includes(P.clWidthMode);
     el.style.display = on ? '' : 'none';
-    if (on) shown++;
-  });
-  // and the tiling rows belonging to the chosen layout
-  document.querySelectorAll('[data-tile]').forEach(el => {
-    el.style.display = el.dataset.tile.split(',').includes(P.tileMode) ? '' : 'none';
   });
 }
 
@@ -910,8 +917,16 @@ registry.push(() => { if (!PRESETS[presetSel.value]) presetSel.value = presetSel
 
   // the selected style's own settings, shown only while it is selected
   const styleHead = divider('Style');
-  styleHead.dataset.style = 'pencil,stipple,contour,lineage';
+  styleHead.dataset.style = 'pencil,stipple,contour,lineage,calligraphic';
   host.appendChild(styleHead);
+  host.appendChild(choice({
+    k:'clWidthMode', lbl:'Width by', style:'calligraphic',
+    options:[['curvature','Curvature'],['alignment','Alignment']],
+    hint:'what sets a stroke\u2019s width. Curvature: how sharply the outline bends there, with no sense of direction \u2014 a plain curvature stroke. Alignment: how closely it runs with the pen, below \u2014 this is what makes it read as calligraphy, since strokes going one way swell while strokes crossing them stay thin'}));
+  host.appendChild(choice({
+    k:'clPenField', lbl:'Pen direction', style:'calligraphic', clmode:'alignment',
+    options:[['wind','Wind (fixed)'],['spiral','Spiral (around centre)']],
+    hint:'Wind holds the pen at one angle everywhere, like paper marked under a steady wind. Spiral turns the pen as it goes around the shape\u2019s centre, so the thick and thin bands wind around it instead of all lining up the same way'}));
   CONTROLS.render.filter(d => d.style)
     .forEach(d => host.appendChild(d.kMin ? rangeRow(d) : slider(d)));
   host.appendChild(choice({
@@ -933,6 +948,7 @@ function rangeRow(def){
   if (def.hint) wrap.title = def.hint;
   if (def.style) wrap.dataset.style = def.style;
   if (def.tile) wrap.dataset.tile = def.tile;
+  if (def.clmode) wrap.dataset.clmode = def.clmode;
 
   const dual = wrap.querySelector('.dual');
   const fill = wrap.querySelector('.fill');
@@ -1006,9 +1022,14 @@ function choice(def){
   for (const [v, label] of def.options) sel.add(new Option(label, v));
   if (def.hint) wrap.title = def.hint;
   const sync = () => { sel.value = P[def.k]; };
-  sel.onchange = () => { P[def.k] = sel.value; if (def.restart) restart({ play:true }); else draw(); };
+  sel.onchange = () => {
+    P[def.k] = sel.value;
+    syncAll();   // a choice can gate other rows, e.g. width mode gating the pen controls
+    if (def.restart) restart({ play:true }); else draw();
+  };
   if (def.style) wrap.dataset.style = def.style;
   if (def.tile) wrap.dataset.tile = def.tile;
+  if (def.clmode) wrap.dataset.clmode = def.clmode;
   sync(); registry.push(sync);
   return wrap;
 }
@@ -1756,6 +1777,14 @@ function nodeCommand(){
            `--sketch-width ${P.skWidthMin},${P.skWidthMax}`,
            `--sketch-opacity ${P.skOpMin},${P.skOpMax}`,
            `--sketch-hue ${P.skHueMin},${P.skHueMax}`,
+           `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
+           `--sketch-val ${P.skValMin},${P.skValMax}`);
+  }
+  if (P.style === 'calligraphic'){
+    a.push(`--width-by ${P.clWidthMode}`, `--pen-width ${P.clWidthLo},${P.clWidthHi}`);
+    if (P.clWidthMode === 'alignment')
+      a.push(`--pen-angle ${P.clPenAngle}`, `--pen-field ${P.clPenField}`, `--pen-turns ${P.clPenTurns}`);
+    a.push(`--sketch-hue ${P.skHueMin},${P.skHueMax}`,
            `--sketch-sat ${P.skSatMin},${P.skSatMax}`,
            `--sketch-val ${P.skValMin},${P.skValMax}`);
   }

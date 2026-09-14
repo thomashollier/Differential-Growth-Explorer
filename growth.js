@@ -76,7 +76,11 @@ const FLAGS = {
   'echoes':            ['ctCount', 'int', 4],
   'echo-gap':          ['ctGap', 'num', 7],
   'echo-fade':         ['ctFade', 'num', 0.72],
-
+  'width-by':          ['clWidthMode', 'str', 'curvature'],
+  'pen-width':         ['clWidthLo:clWidthHi', 'range', [0.4, 3]],
+  'pen-angle':         ['clPenAngle', 'num', 45],
+  'pen-field':         ['clPenField', 'str', 'wind'],
+  'pen-turns':         ['clPenTurns', 'num', 1],
 
 };
 
@@ -141,7 +145,7 @@ Constraints
   --obstacle-path "x,y ..."   area it must keep out of; repeatable
 
 Render
-  --style NAME           smooth | pencil | stipple | contour
+  --style NAME           smooth | pencil | stipple | contour | calligraphic
   --tension N            curve smoothing for the smooth style
   --sketch-passes N --sketch-density N
   (pencil style; the ranges give every stroke its own value)
@@ -154,6 +158,18 @@ Render
                            below 1 packs them against it
             --dot-opacity MIN,MAX
   (contour) --echoes N --echo-gap N --echo-fade N
+  (calligraphic) a tapered ribbon, its width set one of two ways
+    --width-by curvature|alignment   curvature: thick at sharp bends, thin on
+                           straight runs, no sense of direction. alignment:
+                           thick where the line runs with the pen, thin where
+                           it crosses it — this is what reads as calligraphy
+    --pen-width MIN,MAX    the low and high ends of that stroke weight, each
+                           a multiple of --stroke-width
+    (alignment only)
+    --pen-angle N          the pen's angle in degrees (45 is classic calligraphy)
+    --pen-field wind|spiral   wind holds the angle fixed; spiral winds it
+                              around the shape's centre instead
+    --pen-turns N          spiral only: how many times the angle winds around
 
 Output
   --steps N              maximum steps            --output FILE

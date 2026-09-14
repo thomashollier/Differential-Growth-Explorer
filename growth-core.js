@@ -1097,6 +1097,26 @@ function tangent(x0,y0, x1,y1, x2,y2){
   return [tx,ty];
 }
 
+/* The two control points for the segment p1->p2, given its neighbours p0 and
+   p3. Shared by emitPath and any style that needs the same curve — such as
+   one offsetting it into a ribbon — to follow the same line at the same
+   tension. Control points collapse onto the endpoints at tension 0, which
+   bezierCurveTo then draws as the straight segment that follows from that. */
+function bezierControls(x, y, p0, p1, p2, p3, tension){
+  if (tension <= 0) return [x[p1], y[p1], x[p2], y[p2]];
+  const [t1x,t1y] = tangent(x[p0],y[p0], x[p1],y[p1], x[p2],y[p2]);
+  const [t2x,t2y] = tangent(x[p1],y[p1], x[p2],y[p2], x[p3],y[p3]);
+  const cx = x[p2]-x[p1], cy = y[p2]-y[p1];
+  const len = Math.hypot(cx, cy) || 1;
+  const seg = len * tension;
+  // Fade the control arm out as the tangent turns away from the chord: a
+  // full-length arm at a sharp kink throws the curve into a hook that is
+  // not in the node data. Smooth stretches are unaffected (k is ~1).
+  let k1 = (t1x*cx + t1y*cy) / len; if (k1 < 0) k1 = 0;
+  let k2 = (t2x*cx + t2y*cy) / len; if (k2 < 0) k2 = 0;
+  return [x[p1]+t1x*seg*k1, y[p1]+t1y*seg*k1, x[p2]-t2x*seg*k2, y[p2]-t2y*seg*k2];
+}
+
 /* Emits every curve into a sink with moveTo / lineTo / bezierCurveTo — shared
    by the canvas and the SVG export. Each curve becomes its own subpath. */
 function emitPath(g, sink, tension){
@@ -1115,19 +1135,8 @@ function emitPath(g, sink, tension){
     } else {
       for (let i = 0; i < last; i++){
         const p0 = idx(i-1), p1 = idx(i), p2 = idx(i+1), p3 = idx(i+2);
-        const [t1x,t1y] = tangent(x[p0],y[p0], x[p1],y[p1], x[p2],y[p2]);
-        const [t2x,t2y] = tangent(x[p1],y[p1], x[p2],y[p2], x[p3],y[p3]);
-        const cx = x[p2]-x[p1], cy = y[p2]-y[p1];
-        const len = Math.hypot(cx, cy) || 1;
-        const seg = len * tension;
-        // Fade the control arm out as the tangent turns away from the chord: a
-        // full-length arm at a sharp kink throws the curve into a hook that is
-        // not in the node data. Smooth stretches are unaffected (k is ~1).
-        let k1 = (t1x*cx + t1y*cy) / len; if (k1 < 0) k1 = 0;
-        let k2 = (t2x*cx + t2y*cy) / len; if (k2 < 0) k2 = 0;
-        sink.bezierCurveTo(x[p1]+t1x*seg*k1, y[p1]+t1y*seg*k1,
-                           x[p2]-t2x*seg*k2, y[p2]-t2y*seg*k2,
-                           x[p2], y[p2]);
+        const [cp1x,cp1y,cp2x,cp2y] = bezierControls(x, y, p0, p1, p2, p3, tension);
+        sink.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x[p2], y[p2]);
       }
     }
     if (rg.closed && sink.closePath) sink.closePath();
@@ -1617,6 +1626,143 @@ const STYLES = {
             if (rg.closed) sink.closePath();
             sink.stroke(ink, lw, ringAlpha * A);
           }
+        }
+      }
+    },
+  },
+
+  /* A tapered ribbon instead of an even line: width follows how sharply the
+     outline bends, times how closely it runs with the pen. That second part
+     is what makes it read as calligraphy rather than a wobbly contour — a
+     broad nib held at a fixed angle draws thick strokes going one way and
+     thin ones crossing it. */
+  calligraphic: {
+    label: 'Calligraphic',
+    params: ['clWidthMode', 'clWidthLo', 'clWidthHi', 'clPenAngle', 'clPenField', 'clPenTurns',
+             'skHue', 'skSat', 'skVal'],
+    render(sink, sim, P, unit, alpha, variant){
+      const A = alpha === undefined ? 1 : alpha;
+      if (P.fillOn){
+        sink.begin();
+        emitPath(sim, sink, P.tension);
+        sink.fill(P.fill);
+      }
+      if (!P.strokeOn || P.strokeWidth <= 0) return;
+
+      const x = sim.x, y = sim.y;
+      const baseHsv = hexToHsv(P.stroke);
+      const rnd = variantSeed(P, 0x6a09e667, variant);
+      const rr = (a, b) => a + rnd() * (b - a);
+      const byAlignment = P.clWidthMode === 'alignment';
+
+      // local index -> global node index, wrapping a closed curve and
+      // clamping an open one at its ends (same convention as the contour
+      // style's offsetNode)
+      const at = (rg, k) => {
+        const n = rg.e - rg.s;
+        return rg.s + (rg.closed ? ((k % n) + n) % n : Math.max(0, Math.min(n - 1, k)));
+      };
+
+      // Alignment measures a tangent against the pen; curvature measures a
+      // node against its neighbours. Only the chosen one is built.
+      let penVec = null, curv = null, ref = 1;
+      if (byAlignment){
+        // the pen's own centre, for the spiral field: one fixed angle (Wind),
+        // or that angle wound around the centre some number of times (Spiral)
+        const angleRad = (P.clPenAngle || 0) * Math.PI / 180;
+        if (P.clPenField === 'spiral'){
+          let cx = 0, cy = 0, cn = 0;
+          for (const rg of sim.ranges){ for (let i = rg.s; i < rg.e; i++){ cx += x[i]; cy += y[i]; cn++; } }
+          if (!cn) return;
+          cx /= cn; cy /= cn;
+          const turns = P.clPenTurns === undefined ? 1 : P.clPenTurns;
+          penVec = (px, py) => {
+            const theta = Math.atan2(py - cy, px - cx) * turns + angleRad + Math.PI / 2;
+            return [Math.cos(theta), Math.sin(theta)];
+          };
+        } else {
+          const v = [Math.cos(angleRad), Math.sin(angleRad)];
+          penVec = () => v;
+        }
+      } else {
+        curv = new Map();
+        for (const rg of sim.ranges){
+          const n = rg.e - rg.s;
+          if (n < 2) continue;
+          for (let i = 0; i < n; i++){
+            const a = at(rg, i - 1), b = rg.s + i, c = at(rg, i + 1);
+            const s1 = Math.hypot(x[b]-x[a], y[b]-y[a]);
+            const s2 = Math.hypot(x[c]-x[b], y[c]-y[b]);
+            const s3 = Math.hypot(x[c]-x[a], y[c]-y[a]);
+            const area2 = Math.abs((x[b]-x[a])*(y[c]-y[a]) - (x[c]-x[a])*(y[b]-y[a]));
+            const denom = s1 * s2 * s3;
+            curv.set(b, denom > 1e-9 ? area2 / denom : 0);
+          }
+        }
+        if (!curv.size) return;
+        const sorted = Array.from(curv.values()).sort((p, q) => p - q);
+        ref = sorted[sorted.length >> 1] * 3;   // 3x the median bend counts as "sharp"
+        if (!(ref > 1e-9)) ref = 1;
+      }
+
+      const lo = P.clWidthLo * P.strokeWidth * unit;
+      const hi = P.clWidthHi * P.strokeWidth * unit;
+
+      for (const rg of sim.ranges){
+        const n = rg.e - rg.s;
+        if (n < 2) continue;
+        const segCount = rg.closed ? n : n - 1;
+
+        // per-node outward normal and stroke half-width, both interpolated
+        // along a segment to give the ribbon a smooth taper
+        const normals = new Array(n), widths = new Array(n);
+        for (let i = 0; i < n; i++){
+          const a = at(rg, i - 1), b = rg.s + i, c = at(rg, i + 1);
+          let tx = x[c] - x[a], ty = y[c] - y[a];
+          const tl = Math.hypot(tx, ty);
+          let nx = 0, ny = 0, t = 0;
+          if (tl > 1e-9){
+            tx /= tl; ty /= tl;
+            nx = -ty; ny = tx;
+            if (byAlignment){
+              const [vx, vy] = penVec(x[b], y[b]);
+              t = Math.abs(tx * vx + ty * vy);
+            } else {
+              t = Math.min((curv.get(b) || 0) / ref, 1);
+            }
+          }
+          normals[i] = [nx, ny];
+          widths[i] = lo + t * (hi - lo);
+        }
+
+        for (let i = 0; i < segCount; i++){
+          const i1 = (i + 1) % n;
+          const p0 = at(rg, i - 1), p1 = rg.s + i, p2 = rg.s + i1, p3 = at(rg, i + 2);
+          const [cp1x, cp1y, cp2x, cp2y] = bezierControls(x, y, p0, p1, p2, p3, P.tension);
+
+          const hw1 = widths[i] * 0.5, hw2 = widths[i1] * 0.5;
+          const [n1x, n1y] = normals[i], [n2x, n2y] = normals[i1];
+          const hwc1 = hw1 + (hw2 - hw1) / 3, hwc2 = hw1 + (hw2 - hw1) * 2 / 3;
+          const nc1x = n1x + (n2x - n1x) / 3, nc1y = n1y + (n2y - n1y) / 3;
+          const nc2x = n1x + (n2x - n1x) * 2 / 3, nc2y = n1y + (n2y - n1y) * 2 / 3;
+
+          const l1x = x[p1] + n1x*hw1, l1y = y[p1] + n1y*hw1;
+          const lc1x = cp1x + nc1x*hwc1, lc1y = cp1y + nc1y*hwc1;
+          const lc2x = cp2x + nc2x*hwc2, lc2y = cp2y + nc2y*hwc2;
+          const l2x = x[p2] + n2x*hw2, l2y = y[p2] + n2y*hw2;
+
+          const r1x = x[p1] - n1x*hw1, r1y = y[p1] - n1y*hw1;
+          const rc1x = cp1x - nc1x*hwc1, rc1y = cp1y - nc1y*hwc1;
+          const rc2x = cp2x - nc2x*hwc2, rc2y = cp2y - nc2y*hwc2;
+          const r2x = x[p2] - n2x*hw2, r2y = y[p2] - n2y*hw2;
+
+          sink.begin();
+          sink.moveTo(l1x, l1y);
+          sink.bezierCurveTo(lc1x, lc1y, lc2x, lc2y, l2x, l2y);
+          sink.lineTo(r2x, r2y);
+          sink.bezierCurveTo(rc2x, rc2y, rc1x, rc1y, r1x, r1y);
+          sink.closePath();
+          sink.fill(inkFrom(P, baseHsv, rr) || P.stroke, A);
         }
       }
     },
