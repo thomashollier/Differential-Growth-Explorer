@@ -795,6 +795,30 @@ const PRESET_LIST = [
            skHueMin: -30, skHueMax: 45, skSatMin: -0.2, skSatMax: 0.1,
            bg: '#fbf7ef', stroke: '#3d5a5b' },
   },
+  {
+    name: 'Nibs', group: 'creative',
+    note: 'The calligraphic style, width set by Curvature alone — thick at the folds, thin along the runs, with no sense of direction to it — grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every one of the run’s ninety-one steps is layered on under Lighten compositing with a hint of fade, so the tangle a plain pass would end on is instead the sum of all of them, each keeping its own share of the light. Gold fill, electric-blue stroke, so what piles up reads as a live circuit rather than an ink blot.',
+    cfg: { minEdge: 6, maxEdge: 11, repulsionRadius: 30, maxNodes: 2600,
+           frame: { cx: -10.92, cy: -20.01, rx: 582.31, ry: 315.47 },
+           style: 'calligraphic', fillOn: true, strokeWidth: 1.8,
+           clWidthMode: 'curvature', clWidthLo: 0, clWidthHi: 6,
+           tileMode: 'grid', tileRows: 2, tileCols: 2, tileGap: 1.6,
+           accumulate: true, trailFade: 0.025, stampEvery: 1, blend: 'lighten',
+           skHueMin: -12, skHueMax: 12, skSatMin: 0, skSatMax: 0, skValMin: 0, skValMax: 0,
+           showConstraints: false, follow: false,
+           bg: '#151312', fill: '#a88c00', stroke: '#0e70f1' },
+  },
+  {
+    name: 'Copperplate', group: 'creative',
+    note: 'The calligraphic style, width set by Alignment rather than Curvature, and held to one Wind angle throughout rather than Spiral: every stroke’s width comes from how closely it runs with that single angle, so the lean reads as one steady hand rather than a pen following the bends. Fill and background sit a shade apart instead of contrasting, so the page itself barely differs from the shape drawn on it, and the plum stroke is left to carry the whole picture.',
+    cfg: { minEdge: 6, maxEdge: 11, repulsionRadius: 30, maxNodes: 2600,
+           style: 'calligraphic', fillOn: true, tension: 0.6, strokeWidth: 0.8,
+           clWidthMode: 'alignment', clWidthLo: 0, clWidthHi: 6,
+           clPenField: 'wind', clPenAngle: 228,
+           skHueMin: -12, skHueMax: 12, skValMin: 0, skValMax: 0,
+           showConstraints: false,
+           bg: '#eae6dc', fill: '#dbd6cc', stroke: '#3f3145' },
+  },
 
 ];
 
