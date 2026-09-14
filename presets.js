@@ -797,7 +797,7 @@ const PRESET_LIST = [
   },
   {
     name: 'Nibs', group: 'creative',
-    note: 'The calligraphic style, width set by Curvature alone — thick at the folds, thin along the runs, with no sense of direction to it — grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every one of the run’s ninety-one steps is layered on under Lighten compositing with a hint of fade, so the tangle a plain pass would end on is instead the sum of all of them, each keeping its own share of the light. Gold fill, electric-blue stroke, so what piles up reads as a live circuit rather than an ink blot.',
+    note: 'The calligraphic style, width set by Curvature alone — thick at the folds, thin along the runs, with no sense of direction to it — grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every one of the run’s ninety steps is layered on under Lighten compositing with a hint of fade, so the tangle a plain pass would end on is instead the sum of all of them, each keeping its own share of the light. Gold fill, electric-blue stroke, so what piles up reads as a live circuit rather than an ink blot.',
     cfg: { minEdge: 6, maxEdge: 11, repulsionRadius: 30, maxNodes: 2600,
            frame: { cx: -10.92, cy: -20.01, rx: 582.31, ry: 315.47 },
            style: 'calligraphic', fillOn: true, strokeWidth: 1.8,

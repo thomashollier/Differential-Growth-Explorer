@@ -62,7 +62,34 @@ for (const [name, cfg] of Object.entries(PRESETS)){
   // is told what that ground is
   const sink = svgSink(P.blend, { x: x0, y: y0, w, h, fill: P.bg });
 
-  if (P.stackEvery){
+  if (P.accumulate && (P.blend === 'lighten' || P.blend === 'darken')){
+    /* The live canvas's own trick, replayed exactly rather than approximated:
+       every stampEvery steps, sink the accumulated picture a little toward
+       the background — ordinary compositing, so it actually can darken a
+       brighter pixel back down — then lay the current frame over it as its
+       own isolated lighten/darken layer, always at full strength. A mark
+       that keeps getting redrawn near the growing edge stays bright because
+       it keeps being refreshed; one nothing has touched in fifty steps has
+       sunk back toward the paper by then, which a flat per-layer alpha ramp
+       cannot reproduce — most of a growing curve's marks are laid down late,
+       so a ramp keyed on layer order leaves nearly the whole picture at
+       close to full strength regardless of how it is tuned. */
+    const stampEvery = Math.max(1, P.stampEvery | 0);
+    const trailFade = P.trailFade || 0;
+    const replay = new Growth(JSON.parse(JSON.stringify(cfg)));
+    let fadeDebt = 0, lastStamp = -1;
+    for (let i = 0; i < steps; i++){
+      replay.step(null);
+      if (lastStamp < 0 || replay.steps - lastStamp >= stampEvery){
+        fadeDebt += trailFade;
+        if (fadeDebt >= 0.012){ sink.fade(P.bg, fadeDebt); fadeDebt = 0; }
+        sink.layer();
+        style.render(sink, replay, P, unit, 1, replay.steps);
+        if (style.needsHistory) replay.moves.length = 0;
+        lastStamp = replay.steps;
+      }
+    }
+  } else if (P.stackEvery){
     // replay, drawing a layer at each mark and keeping them all
     const replay = new Growth(JSON.parse(JSON.stringify(cfg)));
     let mark = 0;
@@ -74,8 +101,11 @@ for (const [name, cfg] of Object.entries(PRESETS)){
         const fade = P.stackFade === undefined ? 0.55 : P.stackFade;
         const alpha = fade + (1 - fade) * (mark / layers.length);
         // a different random draw per layer, so stacked marks do not pile up
-        // into tracks the way an identical draw repeated would
-        style.render(sink, replay, Object.assign({}, P, { fillOn: false }), unit, alpha, replay.steps);
+        // into tracks the way an identical draw repeated would. fillOn is left
+        // as the preset set it: a style always fills at full strength regardless
+        // of alpha (the live canvas repaints the same solid body every stamp
+        // too), so a filled style stays solid and only its marks fade with age.
+        style.render(sink, replay, P, unit, alpha, replay.steps);
         if (style.needsHistory) replay.moves.length = 0;
       }
     }

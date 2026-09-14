@@ -1217,6 +1217,19 @@ function svgSink(blend, ground){
         + `height="${f(ground.h)}" fill="${ground.fill}"/>`);
       open = true;
     },
+    /* Sinks everything accumulated so far a step toward one colour, the way
+       the live canvas lets old stamps sink back toward the paper between
+       layers. Ordinary compositing, not blended, so — unlike a layer — it
+       actually can darken a brighter pixel back down; that is the only thing
+       that keeps a lighten-composited stack from saturating solid. Must sit
+       outside any open layer group, since isolation would trap it against
+       that layer's own ground instead of the accumulated picture. */
+    fade(color, alpha){
+      if (!ground || !(alpha > 0)) return;
+      if (open){ parts.push('</g>'); open = false; }
+      parts.push(`<rect x="${f(ground.x)}" y="${f(ground.y)}" width="${f(ground.w)}" `
+        + `height="${f(ground.h)}" fill="${color}" fill-opacity="${f(Math.min(1, alpha))}"/>`);
+    },
     moveTo(x, y){ d.push(`M ${f(x)} ${f(y)}`); },
     lineTo(x, y){ d.push(`L ${f(x)} ${f(y)}`); },
     quadTo(cx, cy, x, y){ d.push(`Q ${f(cx)},${f(cy)} ${f(x)},${f(y)}`); },

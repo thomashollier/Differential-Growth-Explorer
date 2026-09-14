@@ -69,7 +69,7 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Phyllotaxis](examples/phyllotaxis.png) | **Phyllotaxis** — 160 circles on a golden-angle spiral, grown together and drawn with no outline at all, so the cells read as shapes against the ground the way the florets of a seed head do. No two curves ever join, so the spiral arrangement survives as the pattern of the gaps between them. |
 | ![Scatter](examples/scatter.png) | **Scatter** — 45 triangles, squares and circles dropped at random and kept only where they touched nothing already placed, then sketched rather than outlined, so the field reads as a plate of specimens drawn one at a time. What each started as is still legible in the arms it puts out. |
 | ![Lattice](examples/lattice.png) | **Lattice** — a five by seven grid shaken off the lattice, each tile spun at random, drawn as a specimen sheet: contour echoes ring every cell and step round the colour wheel as they go out, so each sits in its own halo. |
-| ![Nibs](examples/nibs.png) | **Nibs** — the calligraphic style, width set by Curvature alone, grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every step of the run is layered on under Lighten compositing with a hint of fade, so the tangle a plain pass would end on is instead the sum of all of them. Gold fill, electric-blue stroke, so what piles up reads as a live circuit rather than an ink blot. |
+| ![Nibs](examples/nibs.png) | **Nibs** — the calligraphic style, width set by Curvature alone, grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every step of the run is layered on under Lighten compositing, each older one sinking a little further back toward the paper. The body stays a solid gold, redrawn at every step, while the electric-blue stroke leaves a violet afterglow trailing the growing edge — mark it long enough ago and it has faded out entirely; mark it recently and it still glows. |
 | ![Copperplate](examples/copperplate.png) | **Copperplate** — the calligraphic style again, width set by Alignment instead, held to one Wind angle throughout rather than Spiral: every stroke's width comes from how closely it runs with that single angle, so the lean reads as one steady hand rather than a pen following the bends. Fill and background sit a shade apart instead of contrasting, so the page itself barely differs from the shape drawn on it. |
 
 The pictures are rendered from those definitions by `node make-examples.js`, which writes
@@ -77,7 +77,7 @@ The pictures are rendered from those definitions by `node make-examples.js`, whi
 deflated, which the spec recognises and every renderer here opens without being told.
 `./to-png.sh` turns those into the PNGs shown above, at full 24-bit colour. These files are mostly unique
 coordinate digits, poor material for a compressor, so they come down 2–6× rather than the
-5–10× SVG usually gives: 53MB of examples to 17MB.
+5–10× SVG usually gives: 75MB of examples to 23MB.
 
 ---
 
