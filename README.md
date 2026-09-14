@@ -1,6 +1,6 @@
 # Differential growth — live
 
-![Six examples: plain growth studies on top, styled applications below](og-image.png)
+![Six examples: plain growth studies on top, styled applications below](og-image.jpg)
 
 An interactive version of the differential growth algorithm: a closed or open chain of
 nodes that pushes itself apart, pulls itself together, and grows by splitting its own
