@@ -1,5 +1,7 @@
 # Differential growth — live
 
+![Six examples: plain growth studies on top, styled applications below](og-image.png)
+
 An interactive version of the differential growth algorithm: a closed or open chain of
 nodes that pushes itself apart, pulls itself together, and grows by splitting its own
 edges until it fills the space available. It began as a batch Python script that took
@@ -9,7 +11,7 @@ minutes per image; this runs a step per frame with every parameter live.
 |---|---|
 | `growth-core.js` | the algorithm and the render styles. The only copy of either. |
 | `index.html` | the interactive version. Open it directly — no server, no build. |
-| `presets.js` | the fifteen examples below, as complete configurations |
+| `presets.js` | the thirty examples below, as complete configurations |
 | `growth.js` | the command line version: `node growth.js --help` |
 | `make-examples.js` | re-renders `examples/` from `presets.js` |
 
@@ -67,13 +69,15 @@ Whole pictures, where the drawing is as much the point as the shape.
 | ![Phyllotaxis](examples/phyllotaxis.png) | **Phyllotaxis** — 160 circles on a golden-angle spiral, grown together and drawn with no outline at all, so the cells read as shapes against the ground the way the florets of a seed head do. No two curves ever join, so the spiral arrangement survives as the pattern of the gaps between them. |
 | ![Scatter](examples/scatter.png) | **Scatter** — 45 triangles, squares and circles dropped at random and kept only where they touched nothing already placed, then sketched rather than outlined, so the field reads as a plate of specimens drawn one at a time. What each started as is still legible in the arms it puts out. |
 | ![Lattice](examples/lattice.png) | **Lattice** — a five by seven grid shaken off the lattice, each tile spun at random, drawn as a specimen sheet: contour echoes ring every cell and step round the colour wheel as they go out, so each sits in its own halo. |
+| ![Nibs](examples/nibs.png) | **Nibs** — the calligraphic style, width set by Curvature alone, grown as four circles tiled two by two so their arms interlock into one denser lattice, then stacked: every step of the run is layered on under Lighten compositing with a hint of fade, so the tangle a plain pass would end on is instead the sum of all of them. Gold fill, electric-blue stroke, so what piles up reads as a live circuit rather than an ink blot. |
+| ![Copperplate](examples/copperplate.png) | **Copperplate** — the calligraphic style again, width set by Alignment instead, held to one Wind angle throughout rather than Spiral: every stroke's width comes from how closely it runs with that single angle, so the lean reads as one steady hand rather than a pen following the bends. Fill and background sit a shade apart instead of contrasting, so the page itself barely differs from the shape drawn on it. |
 
 The pictures are rendered from those definitions by `node make-examples.js`, which writes
 `examples/*.svgz` — SVG is XML and has no binary form, so `.svgz` is simply the file
 deflated, which the spec recognises and every renderer here opens without being told.
 `./to-png.sh` turns those into the PNGs shown above, at full 24-bit colour. These files are mostly unique
 coordinate digits, poor material for a compressor, so they come down 2–6× rather than the
-5–10× SVG usually gives: 62MB of examples to 16MB.
+5–10× SVG usually gives: 53MB of examples to 17MB.
 
 ---
 
@@ -375,9 +379,24 @@ the **Style** menu on its header so it is reachable while the section is folded.
   stroke matches, giving a mechanical line; open Follow curve wide and some strokes cut
   straight across the curve while others trace it. Value is what varies a black sketch,
   where hue and saturation have nothing to work with.
+- **Calligraphic** — a tapered ribbon rather than an even line. **Width range** is the
+  low and high ends of the stroke weight, each a multiple of the stroke width above;
+  **Width by** decides which end a given stroke lands on, and the two settings give
+  different pictures rather than different amounts of the same one. *Curvature* reads
+  purely off the outline itself: thick at the sharpest bends, thin along the straight
+  runs between them, with no sense of direction to it — a plain curvature stroke.
+  *Alignment* reads off the pen instead: a stroke running parallel to it is drawn at the
+  high end, one crossing it at the low end, regardless of how either bends — this is what
+  turns the ribbon into calligraphy, since at the classic nib angle of 45° some strokes
+  swell heavily and others stay thin no matter their curvature. **Pen direction**, shown
+  only under Alignment, picks how that angle behaves: *Wind* holds it fixed everywhere,
+  so the thick strokes all lean the same way, like a page marked under a steady wind;
+  *Spiral* winds the angle around the shape's centre instead — **Spiral turns** sets how
+  many times over — so the thick bands curl into a pinwheel rather than all pointing one
+  direction.
 
 **Hue ±**, **Saturation ±** and **Value ±** are shared by every style that makes marks,
-so stipple and contour vary their colour the same way.
+so stipple, contour and calligraphic vary their colour the same way.
 
 A style measures in **output pixels**, not world units — it is handed how much world one
 pixel covers. So a sketch keeps the same character whether you are zoomed out on a
